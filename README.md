@@ -1,8 +1,8 @@
-# 🤖 Chatbot AUTOHALL Helpdesk
+# Chatbot AUTOHALL Helpdesk
 
-> Assistant intelligent pour le Helpdesk IT AUTOHALL — Intégration GLPI
+> Assistant intelligent pour le Helpdesk IT AUTOHALL 
 
-## 📋 Description
+##  Description
 
 Ce chatbot IA aide les utilisateurs AUTOHALL à :
 - **Décrire leur problème** via un dialogue guidé en langage naturel
@@ -13,13 +13,13 @@ Ce chatbot IA aide les utilisateurs AUTOHALL à :
 - **Générer un brouillon d'e-mail** de confirmation (jamais envoyé sans validation)
 - **Consulter l'état** d'un ticket existant
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────┐     SSE      ┌──────────────┐     HTTP      ┌────────────┐
 │   Frontend  │◄────────────►│   Backend    │◄─────────────►│   Ollama   │
-│  React+Vite │              │   FastAPI    │               │  LLM Cloud │
-│  Tailwind   │              │  (async)     │               │            │
+│  React+Vite │              │   FastAPI    │               │     +      │
+│  Tailwind   │              │  (async)     │               │   Mistral  │
 └─────────────┘              └──────┬───────┘               └────────────┘
                                     │
                         ┌───────────┼───────────┐
@@ -31,7 +31,7 @@ Ce chatbot IA aide les utilisateurs AUTOHALL à :
                   └───────────┘ └───────┘ └──────────┘
 ```
 
-## 🚀 Lancement rapide
+##  Lancement rapide
 
 ### Prérequis
 
@@ -107,11 +107,11 @@ docker exec -it autohall_ollama ollama pull gpt-oss:20b
 ```
 
 4. **Accéder à l'application**
-- 🖥️ Frontend : [http://localhost:3000](http://localhost:3000)
-- 📡 API Backend : [http://localhost:8000](http://localhost:8000)
-- 📚 Documentation API : [http://localhost:8000/docs](http://localhost:8000/docs)
+-  Frontend : [http://localhost:3000](http://localhost:3000)
+-  API Backend : [http://localhost:8000](http://localhost:8000)
+-  Documentation API : [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## 📡 API Endpoints
+##  API Endpoints
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
@@ -147,7 +147,7 @@ event: done
 data: [DONE]
 ```
 
-## 📁 Structure du projet
+##  Structure du projet
 
 ```
 ChatBot AH/
@@ -174,7 +174,7 @@ ChatBot AH/
 └── infra/                      # Scripts d'infrastructure
 ```
 
-## 🗂️ Base de données
+##  Base de données
 
 ### Tables principales
 
@@ -204,16 +204,16 @@ Les variables d'environnement sont définies dans `.env` :
 | `RATE_LIMIT_REQUESTS` | Requêtes max / fenêtre | `30` |
 | `CACHE_TTL_SECONDS` | Durée du cache | `300` |
 
-## 🔒 Sécurité & Contraintes
+##  Sécurité & Contraintes
 
-- ✅ **Aucun e-mail envoyé automatiquement** — toujours un brouillon éditable
-- ✅ **Aucune donnée personnelle réelle** dans le code ou les seeds
-- ✅ **Pas de classification prématurée** — questions de clarification si ambigu
-- ✅ **LLMProvider abstrait** — changement de provider sans modifier le code métier
-- ✅ **Rate limiting** — protection contre les abus via Redis
-- ✅ **Cache Redis** — réponses rapides pour les questions fréquentes
+-  **Aucun e-mail envoyé automatiquement** — toujours un brouillon éditable
+-  **Aucune donnée personnelle réelle** dans le code ou les seeds
+-  **Pas de classification prématurée** — questions de clarification si ambigu
+-  **LLMProvider abstrait** — changement de provider sans modifier le code métier
+-  **Rate limiting** — protection contre les abus via Redis
+-  **Cache Redis** — réponses rapides pour les questions fréquentes
 
-## 🛠️ Développement
+##  Développement
 
 ### Lancer uniquement le backend (hors Docker)
 
@@ -231,6 +231,6 @@ npm install
 npm run dev
 ```
 
-## 📄 Licence
+##  Licence
 
 Projet interne AUTOHALL — Digital Factory Analytic Apps — 2026
