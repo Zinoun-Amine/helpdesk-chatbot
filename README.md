@@ -43,7 +43,7 @@ Ce chatbot IA aide les utilisateurs AUTOHALL à :
 
 1. **Cloner le projet et configurer l'environnement**
 ```bash
-cd "ChatBot AH"
+cd "helpdesk-chatbot"
 cp .env.example .env
 ```
 
