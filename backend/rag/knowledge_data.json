@@ -1,0 +1,197 @@
+[
+    {
+        "id": "kb-001",
+        "title": "Impossible de se connecter à Wincar",
+        "category": "Wincar",
+        "problem_description": "L'utilisateur reçoit une erreur 'Connexion refusée' ou le client tourne en boucle lors de la tentative de connexion à Wincar.",
+        "solution_steps": [
+            "Vérifier la connexion réseau (ping vers le serveur Wincar).",
+            "S'assurer que le client n'est pas bloqué par le pare-feu local.",
+            "Purger le cache du client Wincar dans AppData.",
+            "Vérifier si le mot de passe n'a pas expiré."
+        ],
+        "keywords": ["wincar", "connexion", "refusée", "boucle"]
+    },
+    {
+        "id": "kb-002",
+        "title": "Problème d'accès à la messagerie (Outlook)",
+        "category": "Messagerie",
+        "problem_description": "Outlook est déconnecté ou demande sans cesse le mot de passe.",
+        "solution_steps": [
+            "Vérifier l'accès à la version Webmail.",
+            "Supprimer l'ancienne vérification d'identité dans le gestionnaire d'identification Windows.",
+            "Recréer le profil Outlook si le problème persiste.",
+            "Vérifier si la licence Office 365 est bien active."
+        ],
+        "keywords": ["outlook", "mot de passe", "déconnecté", "messagerie"]
+    },
+    {
+        "id": "kb-003",
+        "title": "Lenteur extrême sur Citrix",
+        "category": "Citrix",
+        "problem_description": "Les applications lancées via Citrix Workspace sont très lentes ou se figent.",
+        "solution_steps": [
+            "Fermer la session Citrix proprement (pas juste fermer la fenêtre).",
+            "Mettre à jour l'application Citrix Workspace vers la dernière version.",
+            "Vérifier la latence de la connexion Internet locale.",
+            "Demander au support serveur de vider la session bloquée sur le serveur Citrix."
+        ],
+        "keywords": ["citrix", "lenteur", "fige", "workspace"]
+    },
+    {
+        "id": "kb-004",
+        "title": "Écran bleu Windows (BSOD)",
+        "category": "Matériel",
+        "problem_description": "L'ordinateur redémarre soudainement en affichant un écran bleu.",
+        "solution_steps": [
+            "Noter le code d'erreur affiché sur l'écran bleu (ex: IRQL_NOT_LESS_OR_EQUAL).",
+            "Démarrer en mode sans échec pour vérifier si le problème vient d'un pilote récent.",
+            "Mettre à jour les pilotes de la carte graphique et réseau.",
+            "Faire un diagnostic mémoire (mdsched.exe)."
+        ],
+        "keywords": ["bsod", "écran bleu", "plantage", "redémarrage"]
+    },
+    {
+        "id": "kb-005",
+        "title": "Perte totale de la connexion Internet",
+        "category": "Internet",
+        "problem_description": "L'icône réseau affiche un globe terrestre ou une croix rouge.",
+        "solution_steps": [
+            "Vérifier que le câble Ethernet est bien branché ou que le Wi-Fi est activé.",
+            "Redémarrer le poste de travail.",
+            "Renouveler le bail IP (ipconfig /release puis ipconfig /renew).",
+            "Vérifier si les collègues ont le même problème (panne générale)."
+        ],
+        "keywords": ["internet", "réseau", "hors ligne", "wifi"]
+    },
+    {
+        "id": "kb-006",
+        "title": "Erreur d'activation Windows",
+        "category": "Logiciel Système",
+        "problem_description": "Un message indique que Windows n'est pas activé.",
+        "solution_steps": [
+            "Aller dans les paramètres d'activation de Windows.",
+            "Lancer l'utilitaire de résolution des problèmes d'activation.",
+            "Vérifier que le poste est bien connecté au réseau de l'entreprise (KMS).",
+            "Contacter le niveau 2 si la licence MAK doit être entrée manuellement."
+        ],
+        "keywords": ["windows", "activation", "licence", "kms"]
+    },
+    {
+        "id": "kb-007",
+        "title": "Sage: Erreur de base de données",
+        "category": "Sage",
+        "problem_description": "Lors de l'ouverture de Sage, une erreur SQL ou de connexion à la base apparaît.",
+        "solution_steps": [
+            "Vérifier que le serveur SQL hébergeant Sage est accessible (ping).",
+            "Vérifier que le service SQL Browser est en cours d'exécution sur le serveur.",
+            "Vérifier les droits ODBC sur le poste client.",
+            "Fermer toutes les sessions Sage et relancer."
+        ],
+        "keywords": ["sage", "base de données", "sql", "erreur"]
+    },
+    {
+        "id": "kb-008",
+        "title": "Mise à jour Windows bloquée",
+        "category": "Windows",
+        "problem_description": "Une mise à jour tourne en boucle et empêche le démarrage normal.",
+        "solution_steps": [
+            "Forcer l'arrêt de la machine (rester appuyé sur le bouton power 10s) puis rallumer.",
+            "Si le problème persiste, démarrer en mode réparation et désinstaller la dernière mise à jour.",
+            "Vider le dossier SoftwareDistribution en mode sans échec.",
+            "Relancer la recherche de mises à jour."
+        ],
+        "keywords": ["mise à jour", "bloqué", "windows update", "boucle"]
+    },
+    {
+        "id": "kb-009",
+        "title": "APPCC: Erreur d'accès à l'application",
+        "category": "APPCC",
+        "problem_description": "Message 'Accès refusé' ou page blanche sur l'application APPCC.",
+        "solution_steps": [
+            "Vider le cache du navigateur (Chrome/Edge).",
+            "Essayer de se connecter en navigation privée.",
+            "Vérifier que l'utilisateur a bien les droits d'accès dans l'AD pour APPCC.",
+            "Vérifier si le certificat SSL n'a pas expiré."
+        ],
+        "keywords": ["appcc", "page blanche", "accès refusé", "web"]
+    },
+    {
+        "id": "kb-010",
+        "title": "Coupure d'accès au réseau partagé",
+        "category": "Réseau",
+        "problem_description": "Le lecteur réseau Z: (ou autre) est inaccessible.",
+        "solution_steps": [
+            "Vérifier si le VPN est bien connecté (si en télétravail).",
+            "Cliquer sur le lecteur avec une croix rouge, parfois il suffit de s'authentifier à nouveau.",
+            "Ouvrir un invite de commande et taper: gpupdate /force.",
+            "Si impossible de mapper manuellement (\\\\serveur\\partage), vérifier les droits AD."
+        ],
+        "keywords": ["lecteur réseau", "partage", "accès", "réseau"]
+    },
+    {
+        "id": "kb-011",
+        "title": "Déconnexions intempestives du VPN",
+        "category": "Ligne VPN",
+        "problem_description": "Le client VPN se déconnecte toutes les 5 à 10 minutes.",
+        "solution_steps": [
+            "Vérifier la stabilité de la connexion internet personnelle (ex: box 4G instable).",
+            "Mettre à jour le client VPN FortiClient/Cisco AnyConnect.",
+            "Changer le protocole de connexion (passer de UDP à TCP si possible).",
+            "Vérifier l'heure du système (désynchronisation cause des rejets de certificat)."
+        ],
+        "keywords": ["vpn", "déconnexion", "télétravail", "instable"]
+    },
+    {
+        "id": "kb-012",
+        "title": "GestorNet: Impossible de valider une opération",
+        "category": "GestorNet",
+        "problem_description": "Le bouton de validation est grisé ou renvoie une erreur inattendue.",
+        "solution_steps": [
+            "Vérifier si l'opération précédente est bien clôturée.",
+            "Fermer complètement GestorNet et vider le cache temporaire de l'application.",
+            "Vérifier la compatibilité Java (certaines versions bloquent les applets).",
+            "Si l'erreur persiste, contacter le référent métier GestorNet."
+        ],
+        "keywords": ["gestornet", "validation", "grisé", "erreur"]
+    },
+    {
+        "id": "kb-013",
+        "title": "CRM: Les nouveaux prospects n'apparaissent pas",
+        "category": "CRM",
+        "problem_description": "Après saisie, les données semblent ne pas s'enregistrer dans le CRM.",
+        "solution_steps": [
+            "Actualiser la vue (F5) et vérifier les filtres actifs.",
+            "Vérifier si une alerte de doublon a été ignorée discrètement.",
+            "Tester sur un autre navigateur web.",
+            "Vérifier si une synchronisation (batch) n'est pas bloquée côté serveur."
+        ],
+        "keywords": ["crm", "prospects", "affichage", "sauvegarde"]
+    },
+    {
+        "id": "kb-014",
+        "title": "Poste IP Phone: Pas de tonalité",
+        "category": "Poste IP Phone",
+        "problem_description": "Le téléphone IP est allumé mais il n'y a pas de tonalité ou l'écran indique 'Registration Failed'.",
+        "solution_steps": [
+            "Débrancher et rebrancher le câble réseau du téléphone (POE).",
+            "Vérifier que le port switch est bien configuré sur le VLAN Voix.",
+            "Vérifier si l'adresse MAC du téléphone est bien provisionnée dans le call manager.",
+            "Si le téléphone partage le réseau avec le PC, vérifier le port 'PC' au dos du téléphone."
+        ],
+        "keywords": ["téléphone", "ip phone", "tonalité", "voip"]
+    },
+    {
+        "id": "kb-015",
+        "title": "Outillages SAV: Logiciel de diagnostic auto bloqué",
+        "category": "Outillages SAV",
+        "problem_description": "L'interface de diagnostic ODB/logiciel SAV ne communique plus avec le véhicule.",
+        "solution_steps": [
+            "Vérifier que la sonde/le câble est bien branché(e) et que les voyants sont allumés.",
+            "Redémarrer le PC de l'atelier SAV.",
+            "Vérifier que la licence du logiciel de diagnostic est à jour.",
+            "Vérifier le gestionnaire de périphériques Windows pour voir si le port COM/USB est reconnu."
+        ],
+        "keywords": ["sav", "diagnostic", "atelier", "odb"]
+    }
+]

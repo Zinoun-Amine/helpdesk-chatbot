@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typingCaret {
+  0%, 45% { opacity: 1; }
+  46%, 100% { opacity: 0.15; }
+}
+
+.animate-page-enter {
+  animation: pageEnter 220ms ease-out both;
+}
+
+.animate-typing-caret {
+  animation: typingCaret 850ms steps(1, end) infinite;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xl;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 3px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+  
+  .markdown-body p {
+    margin-bottom: 0.75rem;
+  }
+  
+  .markdown-body p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .markdown-body ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .markdown-body ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .markdown-body strong {
+    font-weight: 600;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+}

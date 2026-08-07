@@ -1,0 +1,1 @@
+export const fetchEventSource = (...a) => globalThis.__FES(...a);

@@ -1,0 +1,126 @@
+ChromaDB indisponible, base KB désactivée: No module named 'chromadb'
+INFO:     Started server process [9032]
+INFO:     Waiting for application startup.
+2026-08-06 11:01:13,149 - main - INFO - Démarrage de AUTOHALL Helpdesk API...
+2026-08-06 11:01:13,150 - main - INFO - Mode Ollama seul activé : PostgreSQL ignoré, RAG local activé.
+2026-08-06 11:01:13,152 - rag.vector_store - WARNING - ChromaDB non initialisé, impossible d'ajouter des documents.
+2026-08-06 11:01:13,152 - rag.knowledge_loader - INFO - Base de connaissances chargée avec succès. (15 fiches)
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+2026-08-06 11:01:48,835 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:01:48,952 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:01:48,953 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:01:49,068 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:01:49,203 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:01:56,065 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:01:56,180 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:01:56,181 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:01:56,296 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:01:56,306 - core.classifier - INFO - Classification du texte: jai un probleme de wifi...
+2026-08-06 11:01:57,213 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:01:57,625 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:01:58,095 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:02:18,795 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:02:18,914 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:02:18,916 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:02:19,029 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:02:19,051 - core.classifier - INFO - Classification du texte: oui je narrive pas a me connecter au wifi...
+2026-08-06 11:02:20,168 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:02:21,073 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:02:23,157 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:02:31,299 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:02:51,196 - integrations.smtp_client - INFO - E-mail SMTP envoyé à abiaabderrahman04.ma@gmail.com
+2026-08-06 11:03:38,432 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:03:38,548 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:03:38,550 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:03:38,681 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:03:38,828 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:03:49,838 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:03:49,941 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:03:49,942 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:03:50,055 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:03:50,073 - core.classifier - INFO - Classification du texte: jai plus accer a mon compte citrix...
+2026-08-06 11:03:51,708 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:03:52,355 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:03:55,349 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:04:23,911 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:04:24,028 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:04:24,029 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:04:24,144 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:04:24,167 - core.classifier - INFO - Classification du texte: si la connexion internet marche bien...
+2026-08-06 11:04:25,268 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:04:25,841 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:04:26,274 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:04:32,969 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:04:33,085 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:04:33,086 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:04:33,194 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:04:33,214 - core.classifier - INFO - Classification du texte: citrix...
+2026-08-06 11:04:34,669 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:04:35,072 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:04:35,582 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:04:51,488 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:04:51,605 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:04:51,606 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:04:51,721 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:04:51,743 - core.classifier - INFO - Classification du texte: je narrive pas a me connetcter...
+2026-08-06 11:04:52,989 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:04:53,434 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:04:53,898 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:04:59,430 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:04:59,548 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:04:59,550 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:04:59,664 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:04:59,689 - core.classifier - INFO - Classification du texte: a citrix...
+2026-08-06 11:05:00,974 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:05:01,616 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:05:02,027 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:05:13,471 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:05:13,587 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:05:13,588 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:05:13,703 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:05:13,724 - core.classifier - INFO - Classification du texte: je narrive pas a me connecter a citrix...
+2026-08-06 11:05:14,942 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:05:15,709 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:05:16,919 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:05:46,340 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:05:46,460 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:05:46,461 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:05:46,576 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:05:46,602 - core.classifier - INFO - Classification du texte: comment est-ce-que je peux fermer la session sur c...
+2026-08-06 11:05:47,692 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:05:48,130 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:05:49,805 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:06:02,580 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:06:02,697 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:06:02,698 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:06:02,812 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:06:02,834 - core.classifier - INFO - Classification du texte: non probleme non resolus...
+2026-08-06 11:06:03,864 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:06:04,645 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:06:05,123 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:06:10,335 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:06:37,087 - integrations.smtp_client - INFO - E-mail SMTP envoyé à abiaabderrahman04.ma@gmail.com
+2026-08-06 11:13:15,738 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:13:15,855 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:13:15,858 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:13:15,988 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:13:16,159 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:13:23,632 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:13:23,749 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:13:23,752 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:13:23,866 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:13:23,888 - core.classifier - INFO - Classification du texte: jai un probleme de wifi...
+2026-08-06 11:13:25,373 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:13:25,886 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:13:28,078 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:15:18,956 - services.cache_service - ERROR - Erreur Redis rate limit check: Timeout connecting to server
+2026-08-06 11:15:19,072 - services.cache_service - ERROR - Erreur Redis rate limit incr: Timeout connecting to server
+2026-08-06 11:15:19,075 - api.chat - INFO - [CHAT] Message reçu; providers actifs: ollama
+2026-08-06 11:15:19,189 - services.cache_service - ERROR - Erreur Redis get: Timeout connecting to server
+2026-08-06 11:15:19,213 - core.classifier - INFO - Classification du texte: non...
+2026-08-06 11:15:20,475 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:15:21,083 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:15:21,934 - services.cache_service - ERROR - Erreur Redis set: Timeout connecting to server
+2026-08-06 11:15:36,852 - httpx - INFO - HTTP Request: POST https://ollama.com/api/chat "HTTP/1.1 200 OK"
+2026-08-06 11:16:22,470 - integrations.smtp_client - INFO - E-mail SMTP envoyé à abiaabderrahman04.ma@gmail.com

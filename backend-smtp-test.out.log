@@ -1,0 +1,2 @@
+INFO:     127.0.0.1:58732 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58740 - "POST /tickets HTTP/1.1" 200 OK
