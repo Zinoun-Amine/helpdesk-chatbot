@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "gpt-oss:20b"
     OLLAMA_API_KEY: str | None = None
     OLLAMA_ONLY: bool = False
-    # Number of tokens / prediction budget Ollama should use. Lower values are faster.
-    OLLAMA_NUM_PREDICT: int = 64
+    # Larger generation windows prevent Ollama from stopping mid-answer.
+    OLLAMA_NUM_PREDICT: int = 512
 
     # GLPI REST API v1
     GLPI_ENABLED: bool = False

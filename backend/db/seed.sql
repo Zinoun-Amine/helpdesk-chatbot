@@ -1,6 +1,5 @@
 -- ============================================================
 -- Seed PostgreSQL — Données 100% FICTIVES
--- AUCUNE donnée réelle du fichier ticket.xlsx n'est utilisée
 -- ============================================================
 
 -- ── Catégories métier AUTOHALL ───────────────────────────────
@@ -29,6 +28,32 @@ INSERT INTO categories (name, description) VALUES
     ('PayRoll', 'Logiciel de paie PayRoll — bulletins, déclarations sociales'),
     ('SRM', 'SRM — gestion des relations fournisseurs, achats')
 ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO technicians (full_name, email, role, team, category_id, active) VALUES
+    ('Amine Zinoun', 'amine.zinoun@autohall.ma', 'Responsable support Wincar', 'Wincar', (SELECT id FROM categories WHERE name = 'Wincar'), true),
+    ('Sofia El Idrissi', 'sofia.elidrissi@autohall.ma', 'Support messagerie / Outlook', 'Messagerie', (SELECT id FROM categories WHERE name = 'Messagerie'), true),
+    ('Youssef Bensaid', 'youssef.bensaid@autohall.ma', 'Support Citrix / virtualisation', 'Citrix', (SELECT id FROM categories WHERE name = 'Citrix'), true),
+    ('Nabil Cherkaoui', 'nabil.cherkaoui@autohall.ma', 'Support matériel et périphériques', 'Matériel', (SELECT id FROM categories WHERE name = 'Matériel'), true),
+    ('Hassan Rami', 'hassan.rami@autohall.ma', 'Support accès internet / réseau', 'Internet', (SELECT id FROM categories WHERE name = 'Internet'), true),
+    ('Karim Tazi', 'karim.tazi@autohall.ma', 'Support logiciels système', 'Logiciel Système', (SELECT id FROM categories WHERE name = 'Logiciel Système'), true),
+    ('Leila Mounir', 'leila.mounir@autohall.ma', 'Support Sage / comptabilité', 'Sage', (SELECT id FROM categories WHERE name = 'Sage'), true),
+    ('Omar Fassi', 'omar.fassi@autohall.ma', 'Support Windows / postes', 'Windows', (SELECT id FROM categories WHERE name = 'Windows'), true),
+    ('Reda Najmi', 'reda.najmi@autohall.ma', 'Support APPCC / conformité', 'APPCC', (SELECT id FROM categories WHERE name = 'APPCC'), true),
+    ('Zakaria Benali', 'zakaria.benali@autohall.ma', 'Support réseau / Wi-Fi / switches', 'Réseau', (SELECT id FROM categories WHERE name = 'Réseau'), true),
+    ('Mehdi Essalhi', 'mehdi.essalhi@autohall.ma', 'Support outillages SAV / diagnostics', 'Outillages SAV', (SELECT id FROM categories WHERE name = 'Outillages SAV'), true),
+    ('Salma Karim', 'salma.karim@autohall.ma', 'Support GestorNet / workflow', 'GestorNet', (SELECT id FROM categories WHERE name = 'GestorNet'), true),
+    ('Mohamed Aouad', 'mohamed.aouad@autohall.ma', 'Support CRM / données clients', 'CRM', (SELECT id FROM categories WHERE name = 'CRM'), true),
+    ('Ilyas Oulhaj', 'ilyas.oulhaj@autohall.ma', 'Support Auto Naps / planification atelier', 'Auto Naps', (SELECT id FROM categories WHERE name = 'Auto Naps'), true),
+    ('Anas Choukri', 'anas.choukri@autohall.ma', 'Support téléphonie IP / postes', 'Poste IP Phone', (SELECT id FROM categories WHERE name = 'Poste IP Phone'), true),
+    ('Sara Bourou', 'sara.bourou@autohall.ma', 'Support reporting / BI', 'Reporting', (SELECT id FROM categories WHERE name = 'Reporting'), true),
+    ('Samir Lahmadi', 'samir.lahmadi@autohall.ma', 'Support VPN / accès distant', 'Ligne VPN', (SELECT id FROM categories WHERE name = 'Ligne VPN'), true),
+    ('Fouad Lahlou', 'fouad.lahlou@autohall.ma', 'Support consommables / matériel de bureau', 'Consommable', (SELECT id FROM categories WHERE name = 'Consommable'), true),
+    ('Mounir Sefrioui', 'mounir.sefrioui@autohall.ma', 'Support lignes téléphoniques', 'Ligne Téléphonique', (SELECT id FROM categories WHERE name = 'Ligne Téléphonique'), true),
+    ('Yacine Debbagh', 'yacine.debbagh@autohall.ma', 'Support GSM / smartphones', 'GSM', (SELECT id FROM categories WHERE name = 'GSM'), true),
+    ('Hicham Regragui', 'hicham.regragui@autohall.ma', 'Support Moovapps / GED', 'Moovapps', (SELECT id FROM categories WHERE name = 'Moovapps'), true),
+    ('Nadia El Yacoubi', 'nadia.elyacoubi@autohall.ma', 'Support PayRoll / paie', 'PayRoll', (SELECT id FROM categories WHERE name = 'PayRoll'), true),
+    ('Imane Zaki', 'imane.zaki@autohall.ma', 'Support SRM / achats fournisseurs', 'SRM', (SELECT id FROM categories WHERE name = 'SRM'), true)
+ON CONFLICT (email) DO NOTHING;
 
 -- ── Conversations fictives ───────────────────────────────────
 INSERT INTO conversations (id, user_name, user_email, current_state, status) VALUES
@@ -117,7 +142,7 @@ SELECT setval('tickets_id_seq', 10, true);
 -- ── Messages fictifs (conversations 1 à 3) ──────────────────
 -- Conversation 1 : Problème Wincar
 INSERT INTO messages (conversation_id, role, content, metadata) VALUES
-    (1, 'assistant', 'Bonjour ! 👋 Je suis l''assistant AUTOHALL Helpdesk. Comment puis-je vous aider aujourd''hui ?', '{}'),
+    (1, 'assistant', 'Bonjour !  Je suis l''assistant AUTOHALL Helpdesk. Comment puis-je vous aider aujourd''hui ?', '{}'),
     (1, 'user', 'Bonjour, Wincar ne marche plus depuis la mise à jour de ce matin', '{}'),
     (1, 'assistant', 'Je comprends que vous rencontrez un problème avec Wincar après une mise à jour. Pouvez-vous me préciser le message d''erreur exact qui s''affiche ?', '{}'),
     (1, 'user', 'Oui, ça dit "Module facturation introuvable" quand j''essaie d''ouvrir le module de facturation', '{}'),
@@ -126,7 +151,7 @@ INSERT INTO messages (conversation_id, role, content, metadata) VALUES
 
 -- Conversation 2 : Demande messagerie
 INSERT INTO messages (conversation_id, role, content, metadata) VALUES
-    (2, 'assistant', 'Bonjour ! 👋 Je suis l''assistant AUTOHALL Helpdesk. Comment puis-je vous aider aujourd''hui ?', '{}'),
+    (2, 'assistant', 'Bonjour !  Je suis l''assistant AUTOHALL Helpdesk. Comment puis-je vous aider aujourd''hui ?', '{}'),
     (2, 'user', 'Je voudrais créer une adresse email pour un nouveau collaborateur', '{}'),
     (2, 'assistant', 'Bien sûr ! Pour créer une nouvelle boîte mail, j''ai besoin de quelques informations :\n1. Nom complet du collaborateur\n2. Service / département\n3. Format d''email souhaité (ex: prenom.nom@autohall.ma)', '{}'),
     (2, 'user', 'Karim Idrissi, responsable atelier, k.idrissi@autohall.ma', '{}'),
@@ -134,7 +159,7 @@ INSERT INTO messages (conversation_id, role, content, metadata) VALUES
 
 -- Conversation 3 : Incident Citrix
 INSERT INTO messages (conversation_id, role, content, metadata) VALUES
-    (3, 'assistant', 'Bonjour ! 👋 Je suis l''assistant AUTOHALL Helpdesk. Comment puis-je vous aider aujourd''hui ?', '{}'),
+    (3, 'assistant', 'Bonjour !  Je suis l''assistant AUTOHALL Helpdesk. Comment puis-je vous aider aujourd''hui ?', '{}'),
     (3, 'user', 'Ma session Citrix se déconnecte sans arrêt', '{}'),
     (3, 'assistant', 'Je suis désolé pour ce désagrément. Pour mieux comprendre votre problème Citrix, pouvez-vous me préciser :\n1. À quelle fréquence la déconnexion se produit-elle ?\n2. Depuis combien de temps avez-vous ce problème ?\n3. Travaillez-vous depuis le bureau ou à distance ?', '{}'),
     (3, 'user', 'Toutes les 10 minutes environ, depuis ce matin, je suis au bureau', '{}'),

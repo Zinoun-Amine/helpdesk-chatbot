@@ -30,6 +30,8 @@ export default function TicketsPage() {
   const [draftSaving, setDraftSaving] = useState(false);
   const [draftError, setDraftError] = useState(null);
   const [detailForm, setDetailForm] = useState(null);
+  const [technicians, setTechnicians] = useState([]);
+  const [reassigning, setReassigning] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [messageSaving, setMessageSaving] = useState(false);
 
@@ -90,6 +92,19 @@ export default function TicketsPage() {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
+  const loadTechnicians = async () => {
+    try {
+      const data = await api.getTechnicians();
+      setTechnicians(data);
+    } catch (err) {
+      setError(err.message || 'Impossible de charger les techniciens.');
+    }
+  };
+
+  useEffect(() => {
+    loadTechnicians();
+  }, []);
+
   const handleSaveTicket = async () => {
     if (!detailForm) return;
     try {
@@ -109,6 +124,29 @@ export default function TicketsPage() {
       setError(err.message || 'Erreur lors de la mise à jour.');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleReassignTicket = async () => {
+    if (!detailForm) return;
+    const selectedTechnician = technicians.find((tech) => String(tech.id) === String(detailForm.assigned_to_id));
+    if (!selectedTechnician) return;
+
+    try {
+      setReassigning(true);
+      const updated = await api.assignTicket(detailForm.id, {
+        technician_id: selectedTechnician.id,
+        technician_name: selectedTechnician.full_name,
+        technician_email: selectedTechnician.email,
+        assigned_by: 'Admin',
+        reason: 'Affectation manuelle depuis le ticket',
+      });
+      setDetailForm(updated);
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || 'Impossible de réaffecter le ticket.');
+    } finally {
+      setReassigning(false);
     }
   };
 
@@ -212,7 +250,18 @@ export default function TicketsPage() {
                       <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{ticket.category}</td>
                       <td className="px-5 py-4"><PriorityBadge value={ticket.priority} /></td>
                       <td className="px-5 py-4"><CriticalityBadge value={ticket.criticality} /></td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{ticket.status}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                        <div className="font-medium">{ticket.status}</div>
+                        <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          {ticket.assigned_to_name ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
+                              {ticket.assigned_to_name}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">Non assigné</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -266,6 +315,43 @@ export default function TicketsPage() {
                     <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Email</span>
                     <input value={detailForm.user_email || ''} onChange={(e) => setDetailForm(prev => ({ ...prev, user_email: e.target.value }))} className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
                   </label>
+                </div>
+
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">Technicien assigné</div>
+                  {detailForm.assigned_to_name ? (
+                    <div className="mt-2 space-y-1">
+                      <div className="text-base font-semibold text-slate-900 dark:text-white">{detailForm.assigned_to_name}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-300">{detailForm.assigned_to_email || 'Email non renseigné'}</div>
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">Aucun technicien assigné pour ce ticket.</div>
+                  )}
+
+                  <div className="mt-4 space-y-3">
+                    <label className="block space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Réaffecter</span>
+                      <select
+                        value={detailForm.assigned_to_id ?? ''}
+                        onChange={(e) => setDetailForm(prev => ({ ...prev, assigned_to_id: Number(e.target.value), assigned_to_name: technicians.find((tech) => String(tech.id) === e.target.value)?.full_name || prev.assigned_to_name, assigned_to_email: technicians.find((tech) => String(tech.id) === e.target.value)?.email || prev.assigned_to_email }))}
+                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      >
+                        <option value="">Choisir un technicien</option>
+                        {technicians.map((tech) => (
+                          <option key={tech.id} value={tech.id}>{tech.full_name} · {tech.role || tech.team || 'Support'}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={handleReassignTicket}
+                      disabled={reassigning || !detailForm.assigned_to_id}
+                      className="rounded-xl bg-autohall-blue px-4 py-3 text-sm font-semibold text-white hover:bg-autohall-darkBlue disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {reassigning ? 'Affectation...' : 'Enregistrer l’affectation'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">

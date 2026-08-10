@@ -135,11 +135,42 @@ async def chat_endpoint(
         raise HTTPException(status_code=429, detail="Too many requests")
     await cache_service.increment_rate_limit(client_ip)
 
-    messages = [
+    conversation_service = ConversationService(db) if db is not None else None
+    conversation_id = chat_request.conversation_id
+    if conversation_id is None and conversation_service is not None:
+        conversation_id = await conversation_service.create_conversation(
+            user_name=chat_request.user_name or "Utilisateur AUTOHALL",
+            user_email=chat_request.user_email or "employe.fictif@autohall.ma",
+        )
+    elif conversation_id is None:
+        conversation_id = ollama_memory.create_conversation(
+            user_name=chat_request.user_name or "Utilisateur AUTOHALL",
+            user_email=chat_request.user_email or "employe.fictif@autohall.ma",
+        )
+
+    incoming_messages = [
         {"role": msg.role, "content": msg.content, "attachments": msg.attachments}
         for msg in chat_request.messages
     ]
-    
+
+    history_messages = []
+    if conversation_id is not None:
+        if settings.OLLAMA_ONLY:
+            prior_conversation = ollama_memory.get_conversation(conversation_id)
+            if prior_conversation:
+                history_messages = [
+                    {"role": message.role, "content": message.content}
+                    for message in prior_conversation.get("messages", [])
+                ]
+        elif conversation_service is not None:
+            prior_messages = await conversation_service.get_messages(conversation_id)
+            history_messages = [
+                {"role": message.role, "content": message.content}
+                for message in prior_messages
+            ]
+
+    messages = history_messages + incoming_messages
+
     if not messages:
         raise HTTPException(status_code=400, detail="Messages array cannot be empty")
 
@@ -165,9 +196,7 @@ async def chat_endpoint(
         runtime_llm_provider = build_llm_provider(runtime_priority)
     logger.info("[CHAT] Message reçu; providers actifs: %s", ", ".join(runtime_priority))
     runtime_classifier = Classifier(runtime_llm_provider)
-    conversation_service = ConversationService(db) if db is not None else None
 
-    conversation_id = chat_request.conversation_id
     if conversation_id is None and conversation_service is not None:
         conversation_id = await conversation_service.create_conversation(
             user_name=chat_request.user_name or "Utilisateur AUTOHALL",

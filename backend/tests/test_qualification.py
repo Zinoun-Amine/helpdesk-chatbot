@@ -57,6 +57,43 @@ class QualificationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["priority"], 6)
         self.assertTrue(result["needs_clarification"])
 
+    async def test_short_greeting_does_not_trigger_ticket_flow(self):
+        class Provider:
+            async def classify(self, text, categories):
+                return {"type": 1, "category": "Inconnue", "priority": 3, "confidence": 0.5, "needs_clarification": False}
+
+            async def chat_stream(self, messages, temperature=0.3):
+                yield "Bonjour"
+
+        store = VectorStore()
+        store.collection = None
+        store.local_documents = []
+        engine = ConversationEngine(
+            llm_provider=Provider(),
+            classifier=Classifier(Provider()),
+            vector_store=store,
+            ticket_service=OllamaTicketService(),
+            email_service=EmailService(None, Provider()),
+        )
+
+        events = [event async for event in engine.process_message_stream([{"role": "user", "content": "bonjour"}], conversation_id=7)]
+        self.assertTrue(any(event.get("type") == "token" and "Bonjour" in event.get("content", "") for event in events))
+        self.assertFalse(any(event.get("action") == "ticket_created" for event in events))
+
+    async def test_create_ticket_request_is_classified_as_ticket(self):
+        rule = Classifier._classify_with_rules(Classifier(object()), "créer un ticket")
+        self.assertEqual(rule["type"], 2)
+        self.assertTrue(rule["needs_clarification"] is False)
+
+    async def test_ticket_service_maps_category_to_technician(self):
+        from services.ticket_service import TicketService
+
+        technician = TicketService.get_default_technician_for_category("Wincar")
+        self.assertIsNotNone(technician)
+        self.assertEqual(technician["name"], "Amine Zinoun")
+        self.assertEqual(technician["email"], "amine.zinoun@autohall.ma")
+        self.assertIn("Wincar", technician["role"])
+
     async def test_local_knowledge_base_is_available_without_chroma(self):
         store = VectorStore()
         await load_knowledge_base(store)

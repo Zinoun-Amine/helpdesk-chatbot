@@ -37,9 +37,15 @@ export function useChat(user) {
 
     abortControllerRef.current = new AbortController();
 
-    // Ne transmettre que la demande courante accélère Ollama et évite de
-    // réinjecter les anciennes conversations dans le contexte du modèle.
-    const chatMessages = [{ role: 'user', content: text, attachments: uploadedAttachments }];
+    const priorMessages = messages
+      .filter(message => message && message.role && message.content)
+      .slice(-8)
+      .map(({ role, content }) => ({ role, content }));
+
+    const chatMessages = [
+      ...priorMessages,
+      { role: 'user', content: text, attachments: uploadedAttachments },
+    ];
     const apiUrl = API_BASE_URL;
 
     const recordResponseTime = () => {

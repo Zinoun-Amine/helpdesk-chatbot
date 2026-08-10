@@ -31,6 +31,19 @@ INSTALL_MARKERS = (
     "installer le",
 )
 
+TICKET_REQUEST_MARKERS = (
+    "créer un ticket",
+    "creer un ticket",
+    "nouveau ticket",
+    "ouvrir un ticket",
+    "ticket support",
+    "create ticket",
+    "new ticket",
+    "je veux un ticket",
+    "je souhaite créer un ticket",
+    "je souhaite un ticket",
+)
+
 class ConversationEngine:
     """
     Machine à états pour le flux conversationnel du chatbot Helpdesk.
@@ -82,7 +95,18 @@ class ConversationEngine:
             yield {"type": "action", "action": "conversation_context", "conversation_id": conversation_id}
 
         normalized_message = user_message.strip().lower()
-        if normalized_message and len(normalized_message) <= 40 and any(marker in normalized_message for marker in GREETING_MARKERS):
+        greeting_only = (
+            normalized_message
+            and len(normalized_message) <= 20
+            and any(
+                normalized_message == marker
+                or normalized_message.startswith(f"{marker} ")
+                or normalized_message.startswith(f"{marker}!")
+                or normalized_message.startswith(f"{marker}?")
+                for marker in GREETING_MARKERS
+            )
+        )
+        if greeting_only:
             yield {"type": "token", "content": "Bonjour ! Décrivez votre problème informatique et je vous aiderai à le qualifier rapidement."}
             yield {"type": "response_complete"}
             return
@@ -94,6 +118,35 @@ class ConversationEngine:
             messages_for_llm = [{"role": "system", "content": greeting_prompt}] + messages
             async for chunk in self.llm.chat_stream(messages_for_llm):
                 yield {"type": "token", "content": chunk}
+            yield {"type": "response_complete"}
+            return
+
+        normalized = user_message.strip().lower()
+        explicit_ticket_request = any(marker in normalized for marker in TICKET_REQUEST_MARKERS)
+
+        if explicit_ticket_request:
+            from models.schemas import TicketDraftSuggestion
+
+            classification = await self.classifier.analyze_issue(user_message)
+            category = classification.get("category") or "General"
+            if category == "Inconnue":
+                category = "Réseau" if any(word in normalized for word in ("wifi", "wifi", "wlan", "réseau", "connexion")) else "General"
+            suggestion = TicketDraftSuggestion(
+                title=(user_message[:80] or "Ticket AUTOHALL"),
+                description=user_message,
+                category=category,
+                priority={1: "Urgent", 2: "High", 3: "Medium", 4: "Medium", 5: "Low", 6: "Low"}.get(classification.get("priority", 3), "Medium"),
+                summary=user_message[:200],
+            )
+            ticket = await self.ticket_service.create_ticket_from_suggestion(
+                suggestion,
+                user_email=user_email,
+                user_name=user_name,
+                conversation_id=conversation_id,
+                ticket_type=classification.get("type", 2),
+            )
+            yield {"type": "action", "action": "ticket_created", "ticket": ticket.model_dump()}
+            yield {"type": "token", "content": f"Votre ticket a bien été créé sous le numéro #{ticket.id}. L’équipe support va traiter votre demande."}
             yield {"type": "response_complete"}
             return
 

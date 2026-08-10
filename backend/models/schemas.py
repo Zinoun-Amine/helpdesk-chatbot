@@ -55,6 +55,9 @@ class TicketCreate(BaseModel):
     user_email: str
     conversation_id: Optional[int] = None
     summary: Optional[str] = None
+    assigned_to_id: Optional[int] = None
+    assigned_to_name: Optional[str] = None
+    assigned_to_email: Optional[str] = None
 
 
 class TicketUpdate(BaseModel):
@@ -65,6 +68,9 @@ class TicketUpdate(BaseModel):
     status: Optional[str] = None
     user_name: Optional[str] = None
     user_email: Optional[str] = None
+    assigned_to_id: Optional[int] = None
+    assigned_to_name: Optional[str] = None
+    assigned_to_email: Optional[str] = None
     resolved_at: Optional[datetime] = None
 
 class TicketResponse(BaseModel):
@@ -80,12 +86,51 @@ class TicketResponse(BaseModel):
     user_name: Optional[str] = None
     user_email: str
     conversation_id: Optional[int] = None
+    assigned_to_id: Optional[int] = None
+    assigned_to_name: Optional[str] = None
+    assigned_to_email: Optional[str] = None
+    assigned_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     resolved_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class TechnicianResponse(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    role: Optional[str] = None
+    team: Optional[str] = None
+    category_id: Optional[int] = None
+    active: bool = True
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TicketAssignmentRequest(BaseModel):
+    technician_id: Optional[int] = None
+    technician_email: Optional[str] = None
+    technician_name: Optional[str] = None
+    assigned_by: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class TicketAssignmentResponse(BaseModel):
+    id: int
+    ticket_id: int
+    technician_id: int
+    assigned_by: Optional[str] = None
+    reason: Optional[str] = None
+    assigned_at: datetime
+
+    class Config:
+        from_attributes = True
+
 
 class TicketStatus(BaseModel):
     id: int

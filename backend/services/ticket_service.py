@@ -50,6 +50,32 @@ LEGACY_STATUS_TO_LABEL = {
     "clos": "Closed",
 }
 
+TECHNICIAN_BY_CATEGORY = {
+    "Wincar": {"name": "Amine Zinoun", "email": "amine.zinoun@autohall.ma", "role": "Responsable support Wincar"},
+    "Messagerie": {"name": "Sofia El Idrissi", "email": "sofia.elidrissi@autohall.ma", "role": "Support messagerie / Outlook"},
+    "Citrix": {"name": "Youssef Bensaid", "email": "youssef.bensaid@autohall.ma", "role": "Support Citrix / virtualisation"},
+    "Matériel": {"name": "Nabil Cherkaoui", "email": "nabil.cherkaoui@autohall.ma", "role": "Support matériel et périphériques"},
+    "Internet": {"name": "Hassan Rami", "email": "hassan.rami@autohall.ma", "role": "Support accès internet / réseau"},
+    "Logiciel Système": {"name": "Karim Tazi", "email": "karim.tazi@autohall.ma", "role": "Support logiciels système"},
+    "Sage": {"name": "Leila Mounir", "email": "leila.mounir@autohall.ma", "role": "Support Sage / comptabilité"},
+    "Windows": {"name": "Omar Fassi", "email": "omar.fassi@autohall.ma", "role": "Support Windows / postes"},
+    "APPCC": {"name": "Reda Najmi", "email": "reda.najmi@autohall.ma", "role": "Support APPCC / conformité"},
+    "Réseau": {"name": "Zakaria Benali", "email": "zakaria.benali@autohall.ma", "role": "Support réseau / Wi-Fi / switches"},
+    "Outillages SAV": {"name": "Mehdi Essalhi", "email": "mehdi.essalhi@autohall.ma", "role": "Support outillages SAV / diagnostics"},
+    "GestorNet": {"name": "Salma Karim", "email": "salma.karim@autohall.ma", "role": "Support GestorNet / workflow"},
+    "CRM": {"name": "Mohamed Aouad", "email": "mohamed.aouad@autohall.ma", "role": "Support CRM / données clients"},
+    "Auto Naps": {"name": "Ilyas Oulhaj", "email": "ilyas.oulhaj@autohall.ma", "role": "Support Auto Naps / planification atelier"},
+    "Poste IP Phone": {"name": "Anas Choukri", "email": "anas.choukri@autohall.ma", "role": "Support téléphonie IP / postes"},
+    "Reporting": {"name": "Sara Bourou", "email": "sara.bourou@autohall.ma", "role": "Support reporting / BI"},
+    "Ligne VPN": {"name": "Samir Lahmadi", "email": "samir.lahmadi@autohall.ma", "role": "Support VPN / accès distant"},
+    "Consommable": {"name": "Fouad Lahlou", "email": "fouad.lahlou@autohall.ma", "role": "Support consommables / matériel de bureau"},
+    "Ligne Téléphonique": {"name": "Mounir Sefrioui", "email": "mounir.sefrioui@autohall.ma", "role": "Support lignes téléphoniques"},
+    "GSM": {"name": "Yacine Debbagh", "email": "yacine.debbagh@autohall.ma", "role": "Support GSM / smartphones"},
+    "Moovapps": {"name": "Hicham Regragui", "email": "hicham.regragui@autohall.ma", "role": "Support Moovapps / GED"},
+    "PayRoll": {"name": "Nadia El Yacoubi", "email": "nadia.elyacoubi@autohall.ma", "role": "Support PayRoll / paie"},
+    "SRM": {"name": "Imane Zaki", "email": "imane.zaki@autohall.ma", "role": "Support SRM / achats fournisseurs"},
+}
+
 
 class TicketService:
     """CRUD et enrichissement des tickets helpdesk."""
@@ -68,6 +94,16 @@ class TicketService:
         if normalized not in STATUS_TO_LEGACY:
             normalized = "open"
         return normalized.title(), STATUS_TO_LEGACY[normalized]
+
+    @staticmethod
+    def get_default_technician_for_category(category: Optional[str]) -> Optional[Dict[str, str]]:
+        if not category:
+            return None
+        normalized = category.strip()
+        for known_category, technician in TECHNICIAN_BY_CATEGORY.items():
+            if known_category.lower() == normalized.lower():
+                return technician
+        return None
 
     def _select_clause(self) -> str:
         return """
@@ -104,6 +140,10 @@ class TicketService:
                 t.user_name,
                 t.user_email,
                 t.conversation_id,
+                t.assigned_to_id,
+                t.assigned_to_name,
+                t.assigned_to_email,
+                t.assigned_at,
                 t.created_at,
                 t.updated_at,
                 COALESCE(t.resolved_at, t.solved_at) AS resolved_at
@@ -126,6 +166,10 @@ class TicketService:
             user_name=data.get("user_name"),
             user_email=data.get("user_email"),
             conversation_id=data.get("conversation_id"),
+            assigned_to_id=data.get("assigned_to_id"),
+            assigned_to_name=data.get("assigned_to_name"),
+            assigned_to_email=data.get("assigned_to_email"),
+            assigned_at=data.get("assigned_at"),
             created_at=data["created_at"],
             updated_at=data["updated_at"],
             resolved_at=data.get("resolved_at"),
@@ -135,17 +179,21 @@ class TicketService:
         priority_label, priority_value = self._normalize_priority(data["priority"])
         status_label, legacy_status = self._normalize_status(data.get("status", "Open"))
 
+        technician = self.get_default_technician_for_category(data.get("category"))
+        assigned_to_name = data.get("assigned_to_name") or (technician["name"] if technician else None)
+        assigned_to_email = data.get("assigned_to_email") or (technician["email"] if technician else None)
+
         query = text(
             """
             INSERT INTO tickets (
                 title, content, description, category, type, priority, priority_label,
                 criticality, status, status_label, user_name, user_email, conversation_id,
-                summary, resolved_at
+                summary, resolved_at, assigned_to_name, assigned_to_email, assigned_at
             )
             VALUES (
                 :title, :content, :description, :category, :ticket_type, :priority_value, :priority_label,
                 :criticality, :legacy_status, :status_label, :user_name, :user_email, :conversation_id,
-                :summary, :resolved_at
+                :summary, :resolved_at, :assigned_to_name, :assigned_to_email, CURRENT_TIMESTAMP
             )
             RETURNING id
             """
@@ -167,11 +215,118 @@ class TicketService:
             "conversation_id": data.get("conversation_id"),
             "summary": data.get("summary"),
             "resolved_at": data.get("resolved_at"),
+            "assigned_to_name": assigned_to_name,
+            "assigned_to_email": assigned_to_email,
         }
 
         result = await self.db.execute(query, params)
         row = result.fetchone()
         ticket_id = row._mapping["id"]
+        await self.db.commit()
+
+        if assigned_to_email:
+            tech_query = text(
+                """
+                SELECT id, full_name, email, role, team, category_id, active, created_at
+                FROM technicians
+                WHERE LOWER(email) = LOWER(:email)
+                LIMIT 1
+                """
+            )
+            tech_result = await self.db.execute(tech_query, {"email": assigned_to_email})
+            tech_row = tech_result.fetchone()
+            if tech_row:
+                await self.db.execute(
+                    text(
+                        """
+                        INSERT INTO ticket_assignments (ticket_id, technician_id, assigned_by, reason, assigned_at)
+                        VALUES (:ticket_id, :technician_id, :assigned_by, :reason, CURRENT_TIMESTAMP)
+                        """
+                    ),
+                    {
+                        "ticket_id": ticket_id,
+                        "technician_id": tech_row._mapping["id"],
+                        "assigned_by": "system",
+                        "reason": f"Auto-assignment by category: {data.get('category')}",
+                    },
+                )
+                await self.db.commit()
+
+        return await self.get_ticket(ticket_id)
+
+    async def assign_ticket(
+        self,
+        ticket_id: int,
+        technician_id: Optional[int] = None,
+        technician_email: Optional[str] = None,
+        technician_name: Optional[str] = None,
+        assigned_by: Optional[str] = None,
+        reason: Optional[str] = None,
+    ) -> Optional[TicketResponse]:
+        current = await self.get_ticket(ticket_id)
+        if not current:
+            return None
+
+        tech_query = text(
+            """
+            SELECT id, full_name, email
+            FROM technicians
+            WHERE (:tech_id IS NOT NULL AND id = :tech_id)
+               OR (:tech_email IS NOT NULL AND LOWER(email) = LOWER(:tech_email))
+            LIMIT 1
+            """
+        )
+        tech_result = await self.db.execute(
+            tech_query,
+            {
+                "tech_id": technician_id,
+                "tech_email": technician_email,
+            },
+        )
+        tech_row = tech_result.fetchone()
+        if not tech_row:
+            return None
+
+        tech_mapping = tech_row._mapping
+        new_name = technician_name or tech_mapping.get("full_name")
+        new_email = technician_email or tech_mapping.get("email")
+
+        update_query = text(
+            """
+            UPDATE tickets
+            SET assigned_to_id = :tech_id,
+                assigned_to_name = :tech_name,
+                assigned_to_email = :tech_email,
+                assigned_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :ticket_id
+            RETURNING id
+            """
+        )
+        await self.db.execute(
+            update_query,
+            {
+                "tech_id": tech_mapping["id"],
+                "tech_name": new_name,
+                "tech_email": new_email,
+                "ticket_id": ticket_id,
+            },
+        )
+
+        await self.db.execute(
+            text(
+                """
+                INSERT INTO ticket_assignments (ticket_id, technician_id, assigned_by, reason, assigned_at)
+                VALUES (:ticket_id, :technician_id, :assigned_by, :reason, CURRENT_TIMESTAMP)
+                """
+            ),
+            {
+                "ticket_id": ticket_id,
+                "technician_id": tech_mapping["id"],
+                "assigned_by": assigned_by or "system",
+                "reason": reason or "Manual assignment",
+            },
+        )
         await self.db.commit()
         return await self.get_ticket(ticket_id)
 

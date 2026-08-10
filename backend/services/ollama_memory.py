@@ -22,6 +22,7 @@ from models.schemas import (
     TicketStatus,
 )
 from services.settings_service import DEFAULT_SETTINGS
+from services.ticket_service import TECHNICIAN_BY_CATEGORY
 
 
 _tickets: Dict[int, TicketResponse] = {}
@@ -193,12 +194,20 @@ def list_tickets(
 def create_ticket(data: Dict[str, Any], ticket_id: Optional[int] = None) -> TicketResponse:
     global _next_ticket_id
     now = _now()
+    category = data.get("category")
+    technician = None
+    if category:
+        for known_category, tech in TECHNICIAN_BY_CATEGORY.items():
+            if known_category.lower() == str(category).strip().lower():
+                technician = tech
+                break
+
     assigned_id = ticket_id or _next_ticket_id
     ticket = TicketResponse(
         id=assigned_id,
         title=data["title"],
         description=data["description"],
-        category=data["category"],
+        category=category,
         priority=data["priority"],
         status=data.get("status", "Open"),
         ticket_type=data.get("ticket_type", 1),
@@ -207,6 +216,10 @@ def create_ticket(data: Dict[str, Any], ticket_id: Optional[int] = None) -> Tick
         user_name=data.get("user_name"),
         user_email=data["user_email"],
         conversation_id=data.get("conversation_id"),
+        assigned_to_id=data.get("assigned_to_id"),
+        assigned_to_name=data.get("assigned_to_name") or (technician["name"] if technician else None),
+        assigned_to_email=data.get("assigned_to_email") or (technician["email"] if technician else None),
+        assigned_at=now if (data.get("assigned_to_email") or (technician and technician.get("email"))) else None,
         created_at=now,
         updated_at=now,
         resolved_at=None,

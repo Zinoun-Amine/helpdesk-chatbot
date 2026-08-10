@@ -35,6 +35,18 @@ export async function getTicket(id) {
   return requestJSON(`${API_BASE_URL}/tickets/${id}`);
 }
 
+export async function getTechnicians() {
+  return requestJSON(`${API_BASE_URL}/technicians`);
+}
+
+export async function assignTicket(id, payload) {
+  return requestJSON(`${API_BASE_URL}/tickets/${id}/assign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
+
 /**
  * Obtenir l'tat d'un ticket spcifique
  */

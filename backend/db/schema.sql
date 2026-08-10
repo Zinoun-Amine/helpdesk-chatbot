@@ -1,12 +1,12 @@
 -- ============================================================
 -- Schéma PostgreSQL — Chatbot AUTOHALL Helpdesk
--- Tables : categories, tickets, conversations, messages, email_drafts
+-- Les Tables : categories, tickets, conversations, messages, email_drafts
 -- ============================================================
 
 -- Extension pour UUID si nécessaire
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ── Table des catégories ITIL ────────────────────────────────
+-- ── Table des catégories ITIL 
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -14,7 +14,7 @@ CREATE TABLE categories (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ── Table des conversations ──────────────────────────────────
+-- ── Table des conversations 
 CREATE TABLE conversations (
     id SERIAL PRIMARY KEY,
     user_name VARCHAR(200),
@@ -29,7 +29,7 @@ CREATE TABLE conversations (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ── Table des tickets (simulateur GLPI) ──────────────────────
+-- ── Table des tickets
 CREATE TABLE tickets (
     id SERIAL PRIMARY KEY,
     title VARCHAR(500) NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE tickets (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ── Table des messages (historique de chat) ───────────────────
+-- ── Table des messages (historique de chat) 
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     conversation_id INTEGER NOT NULL REFERENCES conversations(id)

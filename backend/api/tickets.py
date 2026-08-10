@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
@@ -17,6 +18,9 @@ from models.schemas import (
     EmailDraftUpdate,
     EmailDraftResponse,
     ConversationTicketDraftRequest,
+    TicketAssignmentRequest,
+    TicketAssignmentResponse,
+    TechnicianResponse,
 )
 from services.ticket_service import TicketService
 from services.ollama_ticket_service import OllamaTicketService
@@ -44,7 +48,7 @@ async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)
         created_ticket = await TicketService(db).create_ticket(ticket.model_dump())
 
     email_service = EmailService(db)
-    recipient_email = created_ticket.user_email or settings.SMTP_RECIPIENT
+    recipient_email = created_ticket.assigned_to_email or created_ticket.user_email or settings.SMTP_RECIPIENT
     try:
         body = await email_service.generate_draft_content(created_ticket, [])
         draft = await email_service.create_draft(
@@ -166,6 +170,57 @@ async def draft_from_conversation(payload: ConversationTicketDraftRequest, db: A
         user_email=payload.user_email,
     )
     return suggestion
+
+@router.post("/tickets/{ticket_id}/assign", response_model=TicketResponse)
+async def assign_ticket(ticket_id: int, payload: TicketAssignmentRequest, db: AsyncSession = Depends(get_db)):
+    """Affecte un ticket à un technicien spécifique et garde une trace de l’assignation."""
+    service = TicketService(db)
+    ticket = await service.assign_ticket(
+        ticket_id,
+        technician_id=payload.technician_id,
+        technician_email=payload.technician_email,
+        technician_name=payload.technician_name,
+        assigned_by=payload.assigned_by,
+        reason=payload.reason,
+    )
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket ou technicien introuvable")
+    return ticket
+
+
+@router.get("/technicians", response_model=List[TechnicianResponse])
+async def list_technicians(db: AsyncSession = Depends(get_db)):
+    """Liste les techniciens disponibles pour l’affectation des tickets."""
+    result = await db.execute(
+        text(
+            """
+            SELECT id, full_name, email, role, team, category_id, active, created_at
+            FROM technicians
+            ORDER BY full_name ASC
+            """
+        )
+    )
+    rows = result.fetchall()
+    return [TechnicianResponse(**row._mapping) for row in rows]
+
+
+@router.get("/tickets/{ticket_id}/assignments", response_model=List[TicketAssignmentResponse])
+async def get_ticket_assignments(ticket_id: int, db: AsyncSession = Depends(get_db)):
+    """Renvoie l’historique des affectations d’un ticket."""
+    result = await db.execute(
+        text(
+            """
+            SELECT id, ticket_id, technician_id, assigned_by, reason, assigned_at
+            FROM ticket_assignments
+            WHERE ticket_id = :ticket_id
+            ORDER BY assigned_at DESC, id DESC
+            """
+        ),
+        {"ticket_id": ticket_id},
+    )
+    rows = result.fetchall()
+    return [TicketAssignmentResponse(**row._mapping) for row in rows]
+
 
 @router.put("/email-drafts/{draft_id}", response_model=EmailDraftResponse)
 async def update_email_draft(draft_id: int, draft_update: EmailDraftUpdate, db: AsyncSession = Depends(get_db)):
