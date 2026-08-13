@@ -10,7 +10,7 @@ Ce chatbot IA aide les utilisateurs AUTOHALL à :
 - **Classifier** par catégorie, priorité et criticité
 - **Trouver des solutions rapides** via une base de connaissances (RAG)
 - **Créer automatiquement un ticket** quand aucune solution n'est trouvée
-- **Générer un brouillon d'e-mail** de confirmation (jamais envoyé sans validation)
+- **Générer un brouillon d'e-mail** de confirmation 
 - **Consulter l'état** d'un ticket existant
 
 ##  Architecture
@@ -19,7 +19,7 @@ Ce chatbot IA aide les utilisateurs AUTOHALL à :
 ┌─────────────┐     SSE      ┌──────────────┐     HTTP      ┌────────────┐
 │   Frontend  │◄────────────►│   Backend    │◄─────────────►│   Ollama   │
 │  React+Vite │              │   FastAPI    │               │     +      │
-│  Tailwind   │              │  (async)     │               │   Mistral  │
+│  Tailwind   │              │  (async)     │               │ qwen2.5:3b │
 └─────────────┘              └──────┬───────┘               └────────────┘
                                     │
                         ┌───────────┼───────────┐
@@ -150,7 +150,7 @@ data: [DONE]
 ##  Structure du projet
 
 ```
-ChatBot AH/
+ChatBot Auto Hall/
 ├── docker-compose.yml          # Orchestration des 6 services
 ├── .env.example                # Variables d'environnement
 ├── README.md                   # Ce fichier

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -42,14 +43,14 @@ class ConversationService:
             text(
                 """
                 INSERT INTO messages (conversation_id, role, content, metadata)
-                VALUES (:conversation_id, :role, :content, :metadata)
+                VALUES (:conversation_id, :role, :content, CAST(:metadata AS JSONB))
                 """
             ),
             {
                 "conversation_id": conversation_id,
                 "role": role,
                 "content": content,
-                "metadata": metadata or {},
+                "metadata": json.dumps(metadata or {}),
             },
         )
         await self.db.execute(

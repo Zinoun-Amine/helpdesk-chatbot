@@ -25,7 +25,12 @@ class EmailService:
 
     async def generate_draft_content(self, ticket: TicketResponse, conversation: List[Dict[str, str]]) -> str:
         if not self.llm:
-            return f"Ticket ID: {ticket.id}\nCatégorie: {ticket.category}\nDescription: {ticket.description}\n\nMerci de traiter ce problème."
+            return (
+                f"Ticket ID: {ticket.id}\n"
+                f"Catégorie: {ticket.category}\n"
+                f"Description: {ticket.description}\n\n"
+                "Merci de traiter ce problème."
+            )
 
         prompt = (
             "Tu es un assistant Helpdesk. Rédige un email formel en français à l'équipe IT de niveau 2.\n"
@@ -37,7 +42,100 @@ class EmailService:
             return (await self.llm.chat([{"role": "user", "content": prompt}], temperature=0.2)).strip()
         except Exception as exc:
             logger.error("Erreur de génération de l'e-mail via LLM: %s", exc)
-            return f"Détails du ticket:\nID: {ticket.id}\nCatégorie: {ticket.category}\nProblème: {ticket.description}"
+            return (
+                f"Détails du ticket:\n"
+                f"ID: {ticket.id}\n"
+                f"Catégorie: {ticket.category}\n"
+                f"Problème: {ticket.description}"
+            )
+
+    async def generate_technician_notification(self, ticket: TicketResponse) -> str:
+        """Génère le corps de l'email de notification envoyé au technicien assigné."""
+        user_name = ticket.user_name or "un employé AUTOHALL"
+        user_email = ticket.user_email or "non renseigné"
+
+        if not self.llm:
+            return (
+                f"Bonjour {ticket.assigned_to_name},\n\n"
+                f"Un nouveau ticket vous a été assigné automatiquement.\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"Ticket #{ticket.id} — {ticket.title}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"Catégorie  : {ticket.category}\n"
+                f"Priorité   : {ticket.priority}\n"
+                f"Criticité  : {ticket.criticality}\n"
+                f"Statut     : {ticket.status}\n\n"
+                f"Demandeur  : {user_name} ({user_email})\n\n"
+                f"Description :\n{ticket.description}\n\n"
+                f"Merci de prendre en charge ce ticket dans les meilleurs délais.\n\n"
+                f"— Helpdesk AUTOHALL (système automatique)"
+            )
+
+        prompt = (
+            "Tu es l'assistant Helpdesk AUTOHALL. Rédige un email de notification professionnel en français "
+            f"destiné au technicien {ticket.assigned_to_name} pour l'informer qu'un ticket lui a été assigné.\n\n"
+            f"Ticket #{ticket.id} : {ticket.title}\n"
+            f"Catégorie : {ticket.category} | Priorité : {ticket.priority} | Criticité : {ticket.criticality}\n"
+            f"Demandeur : {user_name} ({user_email})\n"
+            f"Description : {ticket.description}\n\n"
+            "L'email doit : saluer le technicien par son prénom, présenter les détails du ticket de façon structurée, "
+            "lui demander de traiter le ticket rapidement, et se terminer par une signature 'Helpdesk AUTOHALL'. "
+            "Ne mets pas d'objet, uniquement le corps. Maximum 10 lignes."
+        )
+        try:
+            return (await self.llm.chat([{"role": "user", "content": prompt}], temperature=0.2)).strip()
+        except Exception as exc:
+            logger.error("Erreur génération notification technicien via LLM: %s", exc)
+            return (
+                f"Bonjour {ticket.assigned_to_name},\n\n"
+                f"Le ticket #{ticket.id} ({ticket.category} - {ticket.priority}) vous a été assigné.\n"
+                f"Demandeur : {user_name}\n"
+                f"Description : {ticket.description}\n\n"
+                f"Merci de le traiter rapidement.\n\n— Helpdesk AUTOHALL"
+            )
+
+    async def notify_technician(self, ticket: TicketResponse) -> bool:
+        """
+        Envoie un email de notification au technicien assigné au ticket.
+        Retourne True si l'envoi a réussi, False sinon.
+        Ne lève pas d'exception — les erreurs sont loggées silencieusement
+        pour ne pas bloquer la réponse utilisateur.
+        """
+        if not ticket.assigned_to_email:
+            logger.info(
+                "[EMAIL] Ticket #%s : aucun technicien assigné, notification ignorée.",
+                ticket.id,
+            )
+            return False
+
+        try:
+            body = await self.generate_technician_notification(ticket)
+            subject = (
+                f"[AUTOHALL Helpdesk] Nouveau ticket #{ticket.id} assigné — "
+                f"{ticket.category} / {ticket.priority}"
+            )
+            await self.smtp.send(ticket.assigned_to_email, subject, body)
+            logger.info(
+                "[EMAIL] Notification envoyée au technicien %s <%s> pour le ticket #%s.",
+                ticket.assigned_to_name,
+                ticket.assigned_to_email,
+                ticket.id,
+            )
+            return True
+        except SMTPConfigurationError as exc:
+            logger.warning(
+                "[EMAIL] SMTP non configuré — notification technicien ignorée pour le ticket #%s: %s",
+                ticket.id,
+                exc,
+            )
+            return False
+        except Exception as exc:
+            logger.error(
+                "[EMAIL] Échec de la notification technicien pour le ticket #%s: %s",
+                ticket.id,
+                exc,
+            )
+            return False
 
     async def create_draft(self, ticket_id: int, recipient_email: str, subject: str, body: str) -> EmailDraftResponse:
         global _next_memory_id
@@ -64,7 +162,7 @@ class EmailService:
         result = await self.db.execute(text("""
             INSERT INTO email_drafts (ticket_id, recipient_email, subject, body, status)
             VALUES (:ticket_id, :recipient_email, :subject, :body, 'draft')
-            RETURNING id, ticket_id, recipient_email, subject, body, status, created_at, updated_at
+            RETURNING id, ticket_id, recipient_email, subject, body, status, created_at
         """), {"ticket_id": ticket_id, "recipient_email": recipient_email, "subject": subject, "body": body})
         row = result.fetchone()
         await self.db.commit()
@@ -99,9 +197,9 @@ class EmailService:
         if not update_fields:
             return await self.get_draft(draft_id)
         result = await self.db.execute(text(f"""
-            UPDATE email_drafts SET {', '.join(update_fields)}, updated_at = CURRENT_TIMESTAMP
+            UPDATE email_drafts SET {', '.join(update_fields)}
             WHERE id = :id AND status = 'draft'
-            RETURNING id, ticket_id, recipient_email, subject, body, status, created_at, updated_at
+            RETURNING id, ticket_id, recipient_email, subject, body, status, created_at
         """), params)
         row = result.fetchone()
         await self.db.commit()
@@ -112,7 +210,6 @@ class EmailService:
         if not draft or draft.status != "draft":
             return None
 
-        # L'envoi SMTP est effectué avant de marquer le brouillon comme envoyé.
         await self.smtp.send(draft.recipient_email, draft.subject, draft.body)
         if self.db is None:
             sent = draft.model_copy(update={"status": "sent", "updated_at": datetime.now(timezone.utc)})
@@ -120,9 +217,9 @@ class EmailService:
             return sent
 
         result = await self.db.execute(text("""
-            UPDATE email_drafts SET status = 'sent', updated_at = CURRENT_TIMESTAMP
+            UPDATE email_drafts SET status = 'sent'
             WHERE id = :id AND status = 'draft'
-            RETURNING id, ticket_id, recipient_email, subject, body, status, created_at, updated_at
+            RETURNING id, ticket_id, recipient_email, subject, body, status, created_at
         """), {"id": draft_id})
         row = result.fetchone()
         await self.db.commit()

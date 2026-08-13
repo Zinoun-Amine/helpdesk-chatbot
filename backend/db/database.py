@@ -26,6 +26,7 @@ AsyncSessionLocal = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession | None, None]:
     """
     Fournisseur de dépendance pour obtenir une session de base de données asynchrone.
+    Retourne None si OLLAMA_ONLY=True (mode sans PostgreSQL).
     """
     if settings.OLLAMA_ONLY:
         yield None

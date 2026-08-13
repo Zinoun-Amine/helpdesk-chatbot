@@ -44,7 +44,7 @@ async def apply_migrations(engine: AsyncEngine) -> None:
             id SERIAL PRIMARY KEY,
             full_name VARCHAR(200) NOT NULL,
             email VARCHAR(200) NOT NULL UNIQUE,
-            role VARCHAR(100),
+            role VARCHAR(200),
             team VARCHAR(100),
             category_id INTEGER REFERENCES categories(id),
             active BOOLEAN DEFAULT true,
@@ -116,23 +116,25 @@ async def apply_migrations(engine: AsyncEngine) -> None:
         for statement in statements:
             await conn.execute(text(statement))
 
+        # ✅ FIX: qualify all column references with `tickets.` to resolve
+        # the ambiguity with `categories.description` introduced by the FROM join.
         await conn.execute(
             text(
                 """
                 UPDATE tickets
                 SET
-                    description = COALESCE(description, content),
-                    category = COALESCE(category, c.name),
-                    priority_label = COALESCE(priority_label,
+                    description = COALESCE(tickets.description, tickets.content),
+                    category = COALESCE(tickets.category, c.name),
+                    priority_label = COALESCE(tickets.priority_label,
                         CASE
-                            WHEN priority <= 1 THEN 'Urgent'
-                            WHEN priority = 2 THEN 'High'
-                            WHEN priority = 3 THEN 'Medium'
+                            WHEN tickets.priority <= 1 THEN 'Urgent'
+                            WHEN tickets.priority = 2 THEN 'High'
+                            WHEN tickets.priority = 3 THEN 'Medium'
                             ELSE 'Low'
                         END
                     ),
-                    status_label = COALESCE(status_label,
-                        CASE status
+                    status_label = COALESCE(tickets.status_label,
+                        CASE tickets.status
                             WHEN 'nouveau' THEN 'Open'
                             WHEN 'en_cours' THEN 'In Progress'
                             WHEN 'resolu' THEN 'Resolved'
@@ -140,7 +142,7 @@ async def apply_migrations(engine: AsyncEngine) -> None:
                             ELSE 'Open'
                         END
                     ),
-                    resolved_at = COALESCE(resolved_at, solved_at)
+                    resolved_at = COALESCE(tickets.resolved_at, tickets.solved_at)
                 FROM categories c
                 WHERE tickets.category_id = c.id;
                 """
@@ -150,8 +152,8 @@ async def apply_migrations(engine: AsyncEngine) -> None:
             text(
                 """
                 UPDATE tickets
-                SET description = COALESCE(description, content)
-                WHERE description IS NULL;
+                SET description = COALESCE(tickets.description, tickets.content)
+                WHERE tickets.description IS NULL;
                 """
             )
         )

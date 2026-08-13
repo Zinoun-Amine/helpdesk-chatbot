@@ -19,14 +19,12 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://chatbot:chatbot_pass@postgres:5432/chatbot_db
       - REDIS_URL=redis://redis:6379/0
-      # 👇 Point to the host's Ollama instead of a container
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
       - OLLAMA_NUM_PREDICT=${OLLAMA_NUM_PREDICT:-512}
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
-    # 👇 Required on Linux so host.docker.internal resolves
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -109,11 +107,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # ── Ollama service REMOVED — using host's Ollama ────────────
-
-# ── Volumes persistants ──────────────────────────────────────
 volumes:
   postgres_data:
   redis_data:
   chroma_data:
-  # ollama_data removed

@@ -36,7 +36,7 @@ class VectorStore:
             self.collection = None
             return
 
-        for attempt in range(1, 6):
+        for attempt in range(1, 4):
             try:
                 self.client = chromadb.HttpClient(
                     host=app_settings.CHROMA_HOST, 
@@ -51,12 +51,12 @@ class VectorStore:
                 logger.info("ChromaDB initialisé avec succès.")
                 break
             except Exception as e:
-                if attempt >= 5:
+                if attempt >= 3:
                     logger.error(f"Erreur lors de l'initialisation de ChromaDB après plusieurs tentatives: {e}")
                     self.collection = None
                 else:
-                    logger.warning(f"Tentative {attempt} de connexion à ChromaDB échouée, nouvelle tentative dans 2s: {e}")
-                    time.sleep(2)
+                    logger.warning(f"Tentative {attempt} de connexion à ChromaDB échouée, nouvelle tentative dans 1s: {e}")
+                    time.sleep(1)
 
     async def add_documents(self, documents: List[dict]):
         """

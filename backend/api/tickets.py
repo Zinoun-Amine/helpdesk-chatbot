@@ -162,6 +162,12 @@ async def get_ticket_history(ticket_id: int, db: AsyncSession = Depends(get_db))
 
 @router.post("/tickets/from-conversation/draft", response_model=TicketDraftSuggestion)
 async def draft_from_conversation(payload: ConversationTicketDraftRequest, db: AsyncSession = Depends(get_db)):
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Cette fonction requiert PostgreSQL. Désactivez OLLAMA_ONLY.",
+        )
+
     service = TicketService(db)
     suggestion = await service.suggest_from_conversation(
         llm_provider,
@@ -173,7 +179,13 @@ async def draft_from_conversation(payload: ConversationTicketDraftRequest, db: A
 
 @router.post("/tickets/{ticket_id}/assign", response_model=TicketResponse)
 async def assign_ticket(ticket_id: int, payload: TicketAssignmentRequest, db: AsyncSession = Depends(get_db)):
-    """Affecte un ticket à un technicien spécifique et garde une trace de l’assignation."""
+    """Affecte un ticket à un technicien spécifique et garde une trace de l'assignation."""
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Réassignation manuelle non disponible en mode Ollama-only. Activez PostgreSQL.",
+        )
+
     service = TicketService(db)
     ticket = await service.assign_ticket(
         ticket_id,
@@ -190,7 +202,25 @@ async def assign_ticket(ticket_id: int, payload: TicketAssignmentRequest, db: As
 
 @router.get("/technicians", response_model=List[TechnicianResponse])
 async def list_technicians(db: AsyncSession = Depends(get_db)):
-    """Liste les techniciens disponibles pour l’affectation des tickets."""
+    """Liste les techniciens disponibles pour l'affectation des tickets."""
+    # Fallback: mode Ollama-only ou GLPI (pas de DB) → lire depuis le dict statique
+    if db is None:
+        from services.ticket_service import TECHNICIAN_BY_CATEGORY
+        return [
+            TechnicianResponse(
+                id=idx + 1,
+                full_name=tech["name"],
+                email=tech["email"],
+                role=tech.get("role"),
+                team=category,
+                category_id=None,
+                active=True,
+                created_at=None,
+            )
+            for idx, (category, tech) in enumerate(TECHNICIAN_BY_CATEGORY.items())
+        ]
+
+    # Mode complet: lecture depuis la table technicians
     result = await db.execute(
         text(
             """
@@ -206,7 +236,11 @@ async def list_technicians(db: AsyncSession = Depends(get_db)):
 
 @router.get("/tickets/{ticket_id}/assignments", response_model=List[TicketAssignmentResponse])
 async def get_ticket_assignments(ticket_id: int, db: AsyncSession = Depends(get_db)):
-    """Renvoie l’historique des affectations d’un ticket."""
+    """Renvoie l'historique des affectations d'un ticket."""
+    if db is None:
+        # Pas d'historique disponible sans PostgreSQL
+        return []
+
     result = await db.execute(
         text(
             """

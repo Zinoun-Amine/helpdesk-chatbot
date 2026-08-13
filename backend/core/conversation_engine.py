@@ -5,7 +5,7 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 from core.llm_provider import LLMProvider
 from core.classifier import Classifier
 from rag.vector_store import VectorStore
-from services.ticket_service import TicketService
+from services.ticket_service import TicketService, TECHNICIAN_BY_CATEGORY
 from services.email_service import EmailService
 from integrations.smtp_client import SMTPConfigurationError, SMTPDeliveryError
 from config import settings
@@ -44,6 +44,55 @@ TICKET_REQUEST_MARKERS = (
     "je souhaite un ticket",
 )
 
+
+def _build_tech_confirmation(ticket_id: int, category: Optional[str], assigned_to_name: Optional[str]) -> str:
+    """
+    Retourne une phrase de confirmation mentionnant le technicien assigné.
+    Utilisé pour les messages déterministes (sans LLM).
+    """
+    tech_name = assigned_to_name
+    tech_role = None
+    if category:
+        tech_info = TECHNICIAN_BY_CATEGORY.get(category)
+        if tech_info:
+            tech_role = tech_info.get("role")
+
+    if tech_name and tech_role:
+        return (
+            f"Votre ticket **#{ticket_id}** a été créé et assigné à **{tech_name}** "
+            f"({tech_role}). Vous serez recontacté(e) sous 24h."
+        )
+    elif tech_name:
+        return (
+            f"Votre ticket **#{ticket_id}** a été créé et assigné à **{tech_name}**. "
+            f"Vous serez recontacté(e) sous 24h."
+        )
+    else:
+        return (
+            f"Votre ticket **#{ticket_id}** a été créé. "
+            f"L'équipe support va traiter votre demande."
+        )
+
+
+def _build_tech_line(category: Optional[str], assigned_to_name: Optional[str]) -> str:
+    """
+    Retourne la partie 'assigné à X (rôle)' pour injection dans un prompt LLM.
+    """
+    tech_name = assigned_to_name
+    tech_role = None
+    if category:
+        tech_info = TECHNICIAN_BY_CATEGORY.get(category)
+        if tech_info:
+            tech_role = tech_info.get("role")
+
+    if tech_name and tech_role:
+        return f"assigné à **{tech_name}** ({tech_role}), vous serez recontacté(e) sous 24h"
+    elif tech_name:
+        return f"assigné à **{tech_name}**, vous serez recontacté(e) sous 24h"
+    else:
+        return "pris en charge par l'équipe support"
+
+
 class ConversationEngine:
     """
     Machine à états pour le flux conversationnel du chatbot Helpdesk.
@@ -79,9 +128,35 @@ class ConversationEngine:
             "Si un problème est ambigu, pose une question de clarification pour bien comprendre de quoi il s'agit avant d'essayer de résoudre."
         )
 
+    async def _notify_technician_async(self, ticket) -> None:
+        """
+        Envoie la notification email au technicien en arrière-plan.
+        Les erreurs sont absorbées ici — elles ne doivent jamais remonter
+        et bloquer le flux SSE principal.
+        """
+        try:
+            sent = await self.email_service.notify_technician(ticket)
+            if sent:
+                logger.info(
+                    "[NOTIF] Email technicien envoyé pour ticket #%s → %s",
+                    ticket.id,
+                    ticket.assigned_to_email,
+                )
+            else:
+                logger.info(
+                    "[NOTIF] Email technicien non envoyé pour ticket #%s (SMTP désactivé ou pas de technicien).",
+                    ticket.id,
+                )
+        except Exception as exc:
+            logger.error(
+                "[NOTIF] Erreur inattendue lors de la notification technicien pour ticket #%s: %s",
+                ticket.id,
+                exc,
+            )
+
     async def process_message_stream(
-        self, 
-        messages: List[Dict[str, str]], 
+        self,
+        messages: List[Dict[str, str]],
         user_email: str = "employe.fictif@autohall.ma",
         conversation_id: Optional[int] = None,
         user_name: Optional[str] = None,
@@ -127,16 +202,29 @@ class ConversationEngine:
         if explicit_ticket_request:
             from models.schemas import TicketDraftSuggestion
 
-            classification = await self.classifier.analyze_issue(user_message)
+            # Utiliser le contexte complet de la conversation pour classifier
+            full_context = " ".join(
+                m["content"] for m in messages[:-1]
+                if m.get("role") == "user"
+            ).strip()
+            problem_context = full_context or user_message
+
+            classification = await self.classifier.analyze_issue(problem_context)
             category = classification.get("category") or "General"
             if category == "Inconnue":
-                category = "Réseau" if any(word in normalized for word in ("wifi", "wifi", "wlan", "réseau", "connexion")) else "General"
+                category = "Réseau" if any(
+                    word in problem_context.lower()
+                    for word in ("wifi", "wlan", "réseau", "connexion")
+                ) else "General"
+
             suggestion = TicketDraftSuggestion(
-                title=(user_message[:80] or "Ticket AUTOHALL"),
-                description=user_message,
+                title=(problem_context[:80] or "Ticket AUTOHALL"),
+                description=problem_context,
                 category=category,
-                priority={1: "Urgent", 2: "High", 3: "Medium", 4: "Medium", 5: "Low", 6: "Low"}.get(classification.get("priority", 3), "Medium"),
-                summary=user_message[:200],
+                priority={1: "Urgent", 2: "High", 3: "Medium", 4: "Medium", 5: "Low", 6: "Low"}.get(
+                    classification.get("priority", 3), "Medium"
+                ),
+                summary=problem_context[:200],
             )
             ticket = await self.ticket_service.create_ticket_from_suggestion(
                 suggestion,
@@ -146,8 +234,14 @@ class ConversationEngine:
                 ticket_type=classification.get("type", 2),
             )
             yield {"type": "action", "action": "ticket_created", "ticket": ticket.model_dump()}
-            yield {"type": "token", "content": f"Votre ticket a bien été créé sous le numéro #{ticket.id}. L’équipe support va traiter votre demande."}
+            yield {
+                "type": "token",
+                "content": _build_tech_confirmation(ticket.id, ticket.category, ticket.assigned_to_name),
+            }
             yield {"type": "response_complete"}
+
+            # Notification email au technicien (non bloquante)
+            asyncio.create_task(self._notify_technician_async(ticket))
             return
 
         classification_task = asyncio.create_task(self.classifier.analyze_issue(user_message))
@@ -171,7 +265,7 @@ class ConversationEngine:
                 "confidence": classification.get("confidence", 0.0),
             },
         }
-        
+
         # Si la demande nécessite clarification
         if classification.get("needs_clarification", False):
             kb_task.cancel()
@@ -180,9 +274,9 @@ class ConversationEngine:
                 "Le dernier message de l'utilisateur n'est pas assez clair pour classifier le problème. "
                 "Pose-lui une question courte et polie pour obtenir plus de détails (ex: logiciel concerné, message d'erreur, etc.)."
             )
-            
+
             messages_for_llm = [{"role": "system", "content": clarification_prompt}] + messages
-            
+
             async for chunk in self.llm.chat_stream(messages_for_llm):
                 yield {"type": "token", "content": chunk}
             return
@@ -198,37 +292,33 @@ class ConversationEngine:
             filtered_results = [result for result in kb_results if result.category == category]
             if filtered_results:
                 kb_results = filtered_results
-        
+
         # If it's an installation request, do not present KB solutions — create a ticket automatically.
         if force_create_for_install:
             kb_results = []
 
         if kb_results:
-            # Informer le client qu'on a trouvé des infos KB
             yield {"type": "action", "action": "kb_result", "results": [res.model_dump() for res in kb_results]}
-            
+
             context = "\n\n".join([
                 f"Titre: {res.title}\nProblème: {res.problem_description}\nSolutions: {', '.join(res.solution_steps)}"
                 for res in kb_results
             ])
-            
+
             rag_prompt = (
                 f"{self.system_prompt}\n"
                 f"L'utilisateur a le problème suivant et a été classifié en '{classification.get('category')}'.\n"
                 f"Voici des solutions possibles de la base de connaissances:\n{context}\n\n"
                 "Propose ces solutions à l'utilisateur de manière naturelle. Demande-lui si cela résout son problème."
             )
-            
+
             messages_for_llm = [{"role": "system", "content": rag_prompt}] + messages
             async for chunk in self.llm.chat_stream(messages_for_llm):
                 yield {"type": "token", "content": chunk}
-            
+
             return
 
-        # 3. Création de ticket (si pas de solution KB ou si l'utilisateur dit que la solution ne marche pas)
-        # Note: Dans une vraie implémentation, on vérifierait si l'utilisateur a dit "non" à une solution précédente.
-        # Ici on simplifie: si pas de RAG, on crée le ticket.
-        
+        # 3. Création de ticket (si pas de solution KB)
         try:
             suggestion = await self.ticket_service.suggest_from_conversation(
                 self.llm,
@@ -238,10 +328,8 @@ class ConversationEngine:
             )
         except Exception:
             logger.exception("Échec de la génération de la suggestion de ticket; utilisation du secours local")
-            fallback_priority = "High" if classification.get("priority", 3) <= 2 else "Medium"
-            suggestion = None
             from models.schemas import TicketDraftSuggestion
-
+            fallback_priority = "High" if classification.get("priority", 3) <= 2 else "Medium"
             suggestion = TicketDraftSuggestion(
                 title=user_message[:80] or "Ticket AUTOHALL",
                 description=user_message,
@@ -266,21 +354,22 @@ class ConversationEngine:
             ticket_type=classification.get("type", 1),
         )
         yield {"type": "action", "action": "ticket_created", "ticket": ticket.model_dump()}
-        
-        # 4. Réponse finale au client
-        # For installation requests we avoid calling the LLM to generate the final message
-        # because the model may produce irrelevant content. Instead use a deterministic reply.
+
+        # 4. Réponse finale au client avec mention du technicien assigné
+        tech_line = _build_tech_line(ticket.category, ticket.assigned_to_name)
+
         if force_create_for_install:
             assistant_msg = (
-                f"Votre demande d'installation a été créée sous le ticket #{ticket.id}. "
-                "L'équipe support s'en occupe et vous contactera si des informations supplémentaires sont nécessaires."
+                f"Votre demande d'installation a été créée sous le ticket **#{ticket.id}** "
+                f"et {tech_line}."
             )
             yield {"type": "token", "content": assistant_msg}
         else:
             final_prompt = (
                 f"{self.system_prompt}\n"
-                f"Tu as créé le ticket #{ticket.id} intitulé '{ticket.title}'. "
-                "Informe poliment l'utilisateur que son ticket a été créé avec succès et que l'équipe IT s'en occupe."
+                f"Tu as créé le ticket #{ticket.id} intitulé '{ticket.title}', {tech_line}. "
+                "Informe poliment l'utilisateur en mentionnant exactement : le numéro de ticket, "
+                "le nom du technicien assigné et le délai de recontact de 24h. Sois concis, 2-3 phrases maximum."
             )
             messages_for_llm = [{"role": "system", "content": final_prompt}]
             async for chunk in self.llm.chat_stream(messages_for_llm):
@@ -288,7 +377,10 @@ class ConversationEngine:
 
         yield {"type": "response_complete"}
 
-        # 5. Création du brouillon d'email, sans bloquer la réponse utilisateur
+        # 5. Notification email au technicien (non bloquante, avant le draft utilisateur)
+        asyncio.create_task(self._notify_technician_async(ticket))
+
+        # 6. Création du brouillon d'email utilisateur, sans bloquer la réponse
         try:
             email_content = await self.email_service.generate_draft_content(ticket, messages)
             draft = await self.email_service.create_draft(

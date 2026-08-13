@@ -267,23 +267,24 @@ class TicketService:
         if not current:
             return None
 
-        tech_query = text(
-            """
-            SELECT id, full_name, email
-            FROM technicians
-            WHERE (:tech_id IS NOT NULL AND id = :tech_id)
-               OR (:tech_email IS NOT NULL AND LOWER(email) = LOWER(:tech_email))
-            LIMIT 1
-            """
-        )
-        tech_result = await self.db.execute(
-            tech_query,
-            {
-                "tech_id": technician_id,
-                "tech_email": technician_email,
-            },
-        )
-        tech_row = tech_result.fetchone()
+        tech_row = None
+
+        # Recherche par ID si fourni
+        if technician_id is not None:
+            tech_result = await self.db.execute(
+                text("SELECT id, full_name, email FROM technicians WHERE id = :tech_id LIMIT 1"),
+                {"tech_id": technician_id}
+            )
+            tech_row = tech_result.fetchone()
+
+        # Si non trouvé ou non fourni, recherche par email
+        if tech_row is None and technician_email is not None:
+            tech_result = await self.db.execute(
+                text("SELECT id, full_name, email FROM technicians WHERE LOWER(email) = LOWER(:tech_email) LIMIT 1"),
+                {"tech_email": technician_email}
+            )
+            tech_row = tech_result.fetchone()
+
         if not tech_row:
             return None
 
@@ -576,47 +577,52 @@ class TicketService:
         return [TicketHistoryResponse(**row._mapping) for row in result.fetchall()]
 
     async def suggest_from_conversation(
-        self,
-        llm: LLMProvider,
-        conversation_messages: List[Dict[str, str]],
-        user_name: Optional[str] = None,
-        user_email: Optional[str] = None,
-    ) -> TicketDraftSuggestion:
-        transcript = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_messages])
-        prompt = (
-            "Tu es un assistant helpdesk AUTOHALL. À partir de la conversation ci-dessous, "
-            "propose un ticket prêt à créer. Réponds uniquement avec un JSON valide contenant "
-            "les clés: title, description, category, priority, summary. Priority doit être l'une des valeurs: Low, Medium, High, Urgent.\n\n"
-            f"Conversation:\n{transcript}\n\n"
-            f"Contexte utilisateur: nom={user_name or 'inconnu'}, email={user_email or 'inconnu'}"
-        )
-        result = await llm.chat([{"role": "user", "content": prompt}], temperature=0.2)
-        result = result.strip().removeprefix("```json").removesuffix("```").strip()
-        try:
-            data = json.loads(result)
-        except Exception:
-            # Try to recover JSON embedded in surrounding text (common when LLM adds commentary)
+            self,
+            llm: LLMProvider,
+            conversation_messages: List[Dict[str, str]],
+            user_name: Optional[str] = None,
+            user_email: Optional[str] = None,
+        ) -> TicketDraftSuggestion:
+            transcript = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_messages])
+            prompt = (
+                "Tu es un assistant helpdesk AUTOHALL. À partir de la conversation ci-dessous, "
+                "propose un ticket prêt à créer. Réponds uniquement avec un JSON valide contenant "
+                "les clés suivantes:\n"
+                "- title: titre court du problème (max 80 caractères)\n"
+                "- description: description technique concise du problème (max 3 phrases, PAS toute la conversation)\n"
+                "- category: catégorie parmi: Wincar, Messagerie, Citrix, Matériel, Internet, Logiciel Système, Sage, Windows, APPCC, Réseau, Outillages SAV, GestorNet, CRM, Auto Naps, Poste IP Phone, Reporting, Ligne VPN, Consommable, Ligne Téléphonique, GSM, Moovapps, PayRoll, SRM\n"
+                "- priority: Low, Medium, High ou Urgent\n"
+                "- summary: résumé en 1 phrase de ce que l'utilisateur a signalé\n\n"
+                "IMPORTANT: description = le problème technique en 2-3 phrases MAX. "
+                "Ne copie JAMAIS toute la conversation dans description.\n\n"
+                f"Conversation:\n{transcript}\n\n"
+                f"Contexte utilisateur: nom={user_name or 'inconnu'}, email={user_email or 'inconnu'}"
+            )
+            result = await llm.chat([{"role": "user", "content": prompt}], temperature=0.2)
+            result = result.strip().removeprefix("```json").removesuffix("```").strip()
             try:
-                start = result.index("{")
-                end = result.rindex("}") + 1
-                candidate = result[start:end]
-                data = json.loads(candidate)
+                data = json.loads(result)
             except Exception:
-                # Fallback to a conservative suggestion when parsing fails
-                return TicketDraftSuggestion(
-                    title=(conversation_messages[-1]['content'][:80] if conversation_messages else 'Ticket AUTOHALL'),
-                    description=(conversation_messages[-1]['content'] if conversation_messages else ''),
-                    category='General',
-                    priority='Medium',
-                    summary=(conversation_messages[-1]['content'][:200] if conversation_messages else ''),
-                )
-        return TicketDraftSuggestion(
-            title=data.get("title", "Ticket issu de conversation"),
-            description=data.get("description", ""),
-            category=data.get("category", "General"),
-            priority=data.get("priority", "Medium"),
-            summary=data.get("summary", ""),
-        )
+                try:
+                    start = result.index("{")
+                    end = result.rindex("}") + 1
+                    candidate = result[start:end]
+                    data = json.loads(candidate)
+                except Exception:
+                    return TicketDraftSuggestion(
+                        title=(conversation_messages[-1]['content'][:80] if conversation_messages else 'Ticket AUTOHALL'),
+                        description=(conversation_messages[-1]['content'][:300] if conversation_messages else ''),
+                        category='General',
+                        priority='Medium',
+                        summary=(conversation_messages[-1]['content'][:200] if conversation_messages else ''),
+                    )
+            return TicketDraftSuggestion(
+                title=data.get("title", "Ticket issu de conversation"),
+                description=data.get("description", "")[:500],  # hard limit 500 chars
+                category=data.get("category", "General"),
+                priority=data.get("priority", "Medium"),
+                summary=data.get("summary", ""),
+            )
 
     async def create_ticket_from_suggestion(
         self,
