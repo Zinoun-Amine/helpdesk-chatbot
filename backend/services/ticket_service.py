@@ -1,6 +1,7 @@
 import json
 import logging
-from typing import List, Optional, Dict, Any
+import re
+from typing import List, Optional, Dict, Any, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -19,7 +20,6 @@ from models.schemas import (
 )
 
 logger = logging.getLogger(__name__)
-
 
 PRIORITY_TO_VALUE = {
     "urgent": 1,
@@ -51,7 +51,7 @@ LEGACY_STATUS_TO_LABEL = {
 }
 
 TECHNICIAN_BY_CATEGORY = {
-    "Wincar": {"name": "Amine Zinoun", "email": "amine.zinoun@autohall.ma", "role": "Responsable support Wincar"},
+    "Wincar": {"name": "Amine Zinoun", "email": "amine.spk.zinoun@gmail.com", "role": "Responsable support Wincar"},
     "Messagerie": {"name": "Sofia El Idrissi", "email": "sofia.elidrissi@autohall.ma", "role": "Support messagerie / Outlook"},
     "Citrix": {"name": "Youssef Bensaid", "email": "youssef.bensaid@autohall.ma", "role": "Support Citrix / virtualisation"},
     "Matériel": {"name": "Nabil Cherkaoui", "email": "nabil.cherkaoui@autohall.ma", "role": "Support matériel et périphériques"},
@@ -82,6 +82,48 @@ class TicketService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    def _clean_text(self, text: str) -> str:
+        """
+        Nettoie le texte : supprime les salutations, les répétitions,
+        les espaces superflus.
+        """
+        if not text:
+            return text
+
+        # 1. Supprimer les salutations en début de phrase
+        greetings = (
+            r'^bonjour\s*[,;.!?:]?\s*',
+            r'^salut\s*[,;.!?:]?\s*',
+            r'^hello\s*[,;.!?:]?\s*',
+            r'^coucou\s*[,;.!?:]?\s*',
+            r'^salam\s*[,;.!?:]?\s*',
+            r'^hi\s*[,;.!?:]?\s*',
+        )
+        for pattern in greetings:
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+
+        # 2. Supprimer les espaces multiples
+        text = ' '.join(text.split())
+
+        # 3. Supprimer les répétitions consécutives de phrases (ex: "contacter le support contacter le support")
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        seen = set()
+        cleaned_sentences = []
+        for sent in sentences:
+            sent = sent.strip()
+            if not sent:
+                continue
+            key = re.sub(r'[.!?]+$', '', sent).lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            cleaned_sentences.append(sent)
+
+        text = '. '.join(cleaned_sentences)
+        if text and not text.endswith(('.', '!', '?')):
+            text += '.'
+        return text
 
     def _normalize_priority(self, priority: str) -> tuple[str, int]:
         normalized = priority.strip().lower()
@@ -175,7 +217,12 @@ class TicketService:
             resolved_at=data.get("resolved_at"),
         )
 
-    async def create_ticket(self, data: Dict[str, Any]) -> TicketResponse:
+    async def create_ticket(self, data: Dict[str, Any]) -> Tuple[TicketResponse, bool]:
+        """
+        Crée un nouveau ticket. Retourne (TicketResponse, True).
+        (La logique de mise à jour par conversation_id a été supprimée pour éviter
+        de réutiliser le même ticket pour des problèmes différents.)
+        """
         priority_label, priority_value = self._normalize_priority(data["priority"])
         status_label, legacy_status = self._normalize_status(data.get("status", "Open"))
 
@@ -252,7 +299,7 @@ class TicketService:
                 )
                 await self.db.commit()
 
-        return await self.get_ticket(ticket_id)
+        return await self.get_ticket(ticket_id), True
 
     async def assign_ticket(
         self,
@@ -269,7 +316,6 @@ class TicketService:
 
         tech_row = None
 
-        # Recherche par ID si fourni
         if technician_id is not None:
             tech_result = await self.db.execute(
                 text("SELECT id, full_name, email FROM technicians WHERE id = :tech_id LIMIT 1"),
@@ -277,7 +323,6 @@ class TicketService:
             )
             tech_row = tech_result.fetchone()
 
-        # Si non trouvé ou non fourni, recherche par email
         if tech_row is None and technician_email is not None:
             tech_result = await self.db.execute(
                 text("SELECT id, full_name, email FROM technicians WHERE LOWER(email) = LOWER(:tech_email) LIMIT 1"),
@@ -609,19 +654,29 @@ class TicketService:
                     candidate = result[start:end]
                     data = json.loads(candidate)
                 except Exception:
+                    # Fallback: utiliser le dernier message utilisateur et le nettoyer
+                    last_msg = conversation_messages[-1]['content'] if conversation_messages else ''
+                    cleaned = self._clean_text(last_msg)
                     return TicketDraftSuggestion(
-                        title=(conversation_messages[-1]['content'][:80] if conversation_messages else 'Ticket AUTOHALL'),
-                        description=(conversation_messages[-1]['content'][:300] if conversation_messages else ''),
+                        title=cleaned[:80] or "Ticket AUTOHALL",
+                        description=cleaned[:300] if cleaned else '',
                         category='General',
                         priority='Medium',
-                        summary=(conversation_messages[-1]['content'][:200] if conversation_messages else ''),
+                        summary=cleaned[:200] if cleaned else '',
                     )
+            # Post-process: nettoyer titre, description, résumé
+            title = data.get("title", "Ticket issu de conversation")
+            title = self._clean_text(title)
+            description = data.get("description", "")[:500]
+            description = self._clean_text(description)
+            summary = data.get("summary", "")
+            summary = self._clean_text(summary)
             return TicketDraftSuggestion(
-                title=data.get("title", "Ticket issu de conversation"),
-                description=data.get("description", "")[:500],  # hard limit 500 chars
+                title=title,
+                description=description,
                 category=data.get("category", "General"),
                 priority=data.get("priority", "Medium"),
-                summary=data.get("summary", ""),
+                summary=summary,
             )
 
     async def create_ticket_from_suggestion(
@@ -631,7 +686,7 @@ class TicketService:
         user_name: Optional[str] = None,
         conversation_id: Optional[int] = None,
         ticket_type: int = 1,
-    ) -> TicketResponse:
+    ) -> Tuple[TicketResponse, bool]:
         return await self.create_ticket(
             {
                 "title": suggestion.title,

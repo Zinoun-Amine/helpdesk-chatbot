@@ -255,6 +255,38 @@ async def get_ticket_assignments(ticket_id: int, db: AsyncSession = Depends(get_
     rows = result.fetchall()
     return [TicketAssignmentResponse(**row._mapping) for row in rows]
 
+@router.get("/tickets/{ticket_id}/email-draft", response_model=EmailDraftResponse)
+async def get_ticket_email_draft(ticket_id: int, db: AsyncSession = Depends(get_db)):
+    """Récupère le dernier brouillon d'email pour un ticket."""
+    # Ollama-only / no DB: read in-memory drafts
+    if db is None:
+        try:
+            from services import email_service as _email_service
+            candidates = [d for d in _email_service._memory_drafts.values() if d.ticket_id == ticket_id]
+            if not candidates:
+                raise HTTPException(status_code=404, detail="Brouillon introuvable")
+            draft = sorted(candidates, key=lambda d: d.created_at, reverse=True)[0]
+            return draft
+        except Exception:
+            raise HTTPException(status_code=404, detail="Brouillon introuvable")
+
+    # PostgreSQL mode: query latest draft for ticket
+    result = await db.execute(
+        text(
+            """
+            SELECT id, ticket_id, conversation_id, recipient_email, subject, body, status, created_at, sent_at
+            FROM email_drafts
+            WHERE ticket_id = :ticket_id
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        ),
+        {"ticket_id": ticket_id},
+    )
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Brouillon introuvable")
+    return EmailDraftResponse(**row._mapping)
 
 @router.put("/email-drafts/{draft_id}", response_model=EmailDraftResponse)
 async def update_email_draft(draft_id: int, draft_update: EmailDraftUpdate, db: AsyncSession = Depends(get_db)):

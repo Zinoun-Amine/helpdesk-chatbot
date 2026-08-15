@@ -1,9 +1,5 @@
--- ============================================================
+
 -- Schéma PostgreSQL — Chatbot AUTOHALL Helpdesk
--- Tables : categories, technicians, conversations, tickets,
---          messages, ticket_messages, ticket_history,
---          ticket_assignments, email_drafts
--- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

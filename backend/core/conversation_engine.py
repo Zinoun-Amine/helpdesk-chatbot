@@ -2,12 +2,13 @@ import asyncio
 import json
 import logging
 from typing import List, Dict, Any, AsyncGenerator, Optional
+
 from core.llm_provider import LLMProvider
 from core.classifier import Classifier
 from rag.vector_store import VectorStore
 from services.ticket_service import TicketService, TECHNICIAN_BY_CATEGORY
 from services.email_service import EmailService
-from integrations.smtp_client import SMTPConfigurationError, SMTPDeliveryError
+from db.database import AsyncSessionLocal
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,8 @@ TICKET_REQUEST_MARKERS = (
     "create ticket",
     "new ticket",
     "je veux un ticket",
+    "contacter le support",
+    "je veux contacter le support",
     "je souhaite créer un ticket",
     "je souhaite un ticket",
 )
@@ -128,31 +131,52 @@ class ConversationEngine:
             "Si un problème est ambigu, pose une question de clarification pour bien comprendre de quoi il s'agit avant d'essayer de résoudre."
         )
 
-    async def _notify_technician_async(self, ticket) -> None:
+    async def _handle_email_notifications_async(
+        self,
+        ticket_id: int,
+        user_email: str,
+        messages: List[Dict[str, str]],
+        conversation_id: Optional[int]
+    ):
         """
-        Envoie la notification email au technicien en arrière-plan.
-        Les erreurs sont absorbées ici — elles ne doivent jamais remonter
-        et bloquer le flux SSE principal.
+        Tâche de fond pour envoyer les emails de notification au technicien
+        et créer le brouillon utilisateur.
+        Utilise sa propre session de base de données.
         """
         try:
-            sent = await self.email_service.notify_technician(ticket)
-            if sent:
-                logger.info(
-                    "[NOTIF] Email technicien envoyé pour ticket #%s → %s",
-                    ticket.id,
-                    ticket.assigned_to_email,
-                )
-            else:
-                logger.info(
-                    "[NOTIF] Email technicien non envoyé pour ticket #%s (SMTP désactivé ou pas de technicien).",
-                    ticket.id,
-                )
-        except Exception as exc:
-            logger.error(
-                "[NOTIF] Erreur inattendue lors de la notification technicien pour ticket #%s: %s",
-                ticket.id,
-                exc,
-            )
+            async with AsyncSessionLocal() as db:
+                ticket_service = TicketService(db)
+                email_service = EmailService(db)
+
+                ticket = await ticket_service.get_ticket(ticket_id)
+                if not ticket:
+                    logger.error("Ticket %s non trouvé pour les notifications email", ticket_id)
+                    return
+
+                # Notification au technicien
+                sent = await email_service.notify_technician(ticket)
+                if sent:
+                    logger.info("[NOTIF] Email technicien envoyé pour ticket #%s → %s",
+                                ticket.id, ticket.assigned_to_email)
+                else:
+                    logger.info("[NOTIF] Email technicien non envoyé pour ticket #%s (SMTP désactivé ou pas de technicien).",
+                                ticket.id)
+
+                # Création du brouillon utilisateur (et envoi si auto-send)
+                try:
+                    email_content = await email_service.generate_draft_content(ticket, messages)
+                    draft = await email_service.create_draft(
+                        ticket_id=ticket.id,
+                        recipient_email=ticket.user_email or settings.SMTP_RECIPIENT,
+                        subject=f"Nouveau Ticket: {ticket.category} - {ticket.priority}",
+                        body=email_content,
+                    )
+                    if settings.SMTP_AUTO_SEND:
+                        draft = await email_service.send_draft(draft.id) or draft
+                except Exception as e:
+                    logger.error("Erreur lors de la création/envoi du draft pour ticket %s: %s", ticket.id, e)
+        except Exception as e:
+            logger.error("Erreur dans la tâche de notification email pour ticket %s: %s", ticket_id, e)
 
     async def process_message_stream(
         self,
@@ -185,16 +209,6 @@ class ConversationEngine:
             yield {"type": "token", "content": "Bonjour ! Décrivez votre problème informatique et je vous aiderai à le qualifier rapidement."}
             yield {"type": "response_complete"}
             return
-            greeting_prompt = (
-                f"{self.system_prompt}\n"
-                "L'utilisateur vient de saluer ou d'ouvrir la conversation avec une phrase courte. "
-                "Réponds avec un accueil naturel, poli et bref, puis invite-le à décrire son problème informatique."
-            )
-            messages_for_llm = [{"role": "system", "content": greeting_prompt}] + messages
-            async for chunk in self.llm.chat_stream(messages_for_llm):
-                yield {"type": "token", "content": chunk}
-            yield {"type": "response_complete"}
-            return
 
         normalized = user_message.strip().lower()
         explicit_ticket_request = any(marker in normalized for marker in TICKET_REQUEST_MARKERS)
@@ -202,36 +216,27 @@ class ConversationEngine:
         if explicit_ticket_request:
             from models.schemas import TicketDraftSuggestion
 
-            # Utiliser le contexte complet de la conversation pour classifier
-            full_context = " ".join(
-                m["content"] for m in messages[:-1]
-                if m.get("role") == "user"
-            ).strip()
-            problem_context = full_context or user_message
-
-            classification = await self.classifier.analyze_issue(problem_context)
-            category = classification.get("category") or "General"
-            if category == "Inconnue":
-                category = "Réseau" if any(
-                    word in problem_context.lower()
-                    for word in ("wifi", "wlan", "réseau", "connexion")
-                ) else "General"
-
-            suggestion = TicketDraftSuggestion(
-                title=(problem_context[:80] or "Ticket AUTOHALL"),
-                description=problem_context,
-                category=category,
-                priority={1: "Urgent", 2: "High", 3: "Medium", 4: "Medium", 5: "Low", 6: "Low"}.get(
-                    classification.get("priority", 3), "Medium"
-                ),
-                summary=problem_context[:200],
+            # Use the full conversation to generate a proper ticket suggestion
+            suggestion = await self.ticket_service.suggest_from_conversation(
+                self.llm,
+                messages,  # <-- full conversation, not just the last message
+                user_name=user_name,
+                user_email=user_email,
             )
-            ticket = await self.ticket_service.create_ticket_from_suggestion(
+            # If category is still missing, fallback to classification
+            if suggestion.category == "General":
+                full_context = " ".join(m["content"] for m in messages if m.get("role") == "user")
+                classification = await self.classifier.analyze_issue(full_context)
+                category = classification.get("category") or "General"
+                if category != "Inconnue":
+                    suggestion = suggestion.model_copy(update={"category": category})
+
+            ticket, created = await self.ticket_service.create_ticket_from_suggestion(
                 suggestion,
                 user_email=user_email,
                 user_name=user_name,
                 conversation_id=conversation_id,
-                ticket_type=classification.get("type", 2),
+                ticket_type=2,  # Type 2 = Service Request (explicit)
             )
             yield {"type": "action", "action": "ticket_created", "ticket": ticket.model_dump()}
             yield {
@@ -240,8 +245,13 @@ class ConversationEngine:
             }
             yield {"type": "response_complete"}
 
-            # Notification email au technicien (non bloquante)
-            asyncio.create_task(self._notify_technician_async(ticket))
+            if created:
+                asyncio.create_task(self._handle_email_notifications_async(
+                    ticket.id,
+                    user_email,
+                    messages,
+                    conversation_id
+                ))
             return
 
         classification_task = asyncio.create_task(self.classifier.analyze_issue(user_message))
@@ -274,9 +284,7 @@ class ConversationEngine:
                 "Le dernier message de l'utilisateur n'est pas assez clair pour classifier le problème. "
                 "Pose-lui une question courte et polie pour obtenir plus de détails (ex: logiciel concerné, message d'erreur, etc.)."
             )
-
             messages_for_llm = [{"role": "system", "content": clarification_prompt}] + messages
-
             async for chunk in self.llm.chat_stream(messages_for_llm):
                 yield {"type": "token", "content": chunk}
             return
@@ -293,7 +301,6 @@ class ConversationEngine:
             if filtered_results:
                 kb_results = filtered_results
 
-        # If it's an installation request, do not present KB solutions — create a ticket automatically.
         if force_create_for_install:
             kb_results = []
 
@@ -315,11 +322,11 @@ class ConversationEngine:
             messages_for_llm = [{"role": "system", "content": rag_prompt}] + messages
             async for chunk in self.llm.chat_stream(messages_for_llm):
                 yield {"type": "token", "content": chunk}
-
             return
 
         # 3. Création de ticket (si pas de solution KB)
         try:
+            # Use full conversation to generate suggestion
             suggestion = await self.ticket_service.suggest_from_conversation(
                 self.llm,
                 messages,
@@ -330,12 +337,15 @@ class ConversationEngine:
             logger.exception("Échec de la génération de la suggestion de ticket; utilisation du secours local")
             from models.schemas import TicketDraftSuggestion
             fallback_priority = "High" if classification.get("priority", 3) <= 2 else "Medium"
+            # Fallback uses the full conversation's last user message? Better to use full context but we'll keep last for brevity.
+            # We'll use the entire conversation transcript to get context.
+            full_context = " ".join(m["content"] for m in messages if m.get("role") == "user")
             suggestion = TicketDraftSuggestion(
-                title=user_message[:80] or "Ticket AUTOHALL",
-                description=user_message,
+                title=full_context[:80] or "Ticket AUTOHALL",
+                description=full_context[:300] if full_context else "",
                 category=classification.get("category", "General") or "General",
                 priority=fallback_priority,
-                summary=user_message[:200],
+                summary=full_context[:200] if full_context else "",
             )
 
         priority_label = {1: "Urgent", 2: "High", 3: "Medium", 4: "Medium", 5: "Low", 6: "Low"}.get(
@@ -346,7 +356,7 @@ class ConversationEngine:
             "priority": priority_label,
         })
 
-        ticket = await self.ticket_service.create_ticket_from_suggestion(
+        ticket, created = await self.ticket_service.create_ticket_from_suggestion(
             suggestion,
             user_email=user_email,
             user_name=user_name,
@@ -377,21 +387,11 @@ class ConversationEngine:
 
         yield {"type": "response_complete"}
 
-        # 5. Notification email au technicien (non bloquante, avant le draft utilisateur)
-        asyncio.create_task(self._notify_technician_async(ticket))
-
-        # 6. Création du brouillon d'email utilisateur, sans bloquer la réponse
-        try:
-            email_content = await self.email_service.generate_draft_content(ticket, messages)
-            draft = await self.email_service.create_draft(
-                ticket_id=ticket.id,
-                recipient_email=ticket.user_email or settings.SMTP_RECIPIENT,
-                subject=f"Nouveau Ticket: {ticket.category} - {ticket.priority}",
-                body=email_content,
-            )
-            if settings.SMTP_AUTO_SEND:
-                draft = await self.email_service.send_draft(draft.id) or draft
-            yield {"type": "action", "action": "email_draft", "draft": draft.model_dump()}
-        except (SMTPConfigurationError, SMTPDeliveryError) as exc:
-            logger.error("Le ticket %s a été créé, mais son e-mail n'a pas été envoyé: %s", ticket.id, exc)
-            yield {"type": "action", "action": "email_error", "detail": str(exc)}
+        # 5. Lancer les notifications en arrière-plan (seulement si nouveau ticket)
+        if created:
+            asyncio.create_task(self._handle_email_notifications_async(
+                ticket.id,
+                user_email,
+                messages,
+                conversation_id
+            ))

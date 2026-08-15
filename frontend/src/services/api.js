@@ -142,6 +142,10 @@ export async function sendEmailDraft(id) {
   });
 }
 
+export async function getTicketEmailDraft(ticketId) {
+  return requestJSON(`${API_BASE_URL}/tickets/${ticketId}/email-draft`);
+}
+
 /**
  * Rechercher dans la base de connaissances
  */

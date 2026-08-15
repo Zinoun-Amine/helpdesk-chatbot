@@ -1,12 +1,4 @@
-# ============================================================
-# Docker Compose — Chatbot AUTOHALL Helpdesk
-# Services : backend, frontend, postgres, redis, chromadb
-# (Ollama runs on the HOST, not in Docker)
-# ============================================================
-
 services:
-
-  # ── Backend FastAPI (async, SSE streaming) ──────────────────
   backend:
     build:
       context: ./backend
