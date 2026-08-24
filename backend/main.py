@@ -10,6 +10,7 @@ from api.knowledge_base import router as kb_router
 from api.dashboard import router as dashboard_router
 from api.settings import router as settings_router
 from api.conversations import router as conversations_router
+from api.auth import router as auth_router
 
 # Pour le lifespan
 from api.chat import vector_store, cache_service, llm_provider, glpi_client
@@ -76,6 +77,7 @@ app.include_router(kb_router)
 app.include_router(dashboard_router)
 app.include_router(settings_router)
 app.include_router(conversations_router)
+app.include_router(auth_router)
 
 @app.get("/health")
 async def health_check():

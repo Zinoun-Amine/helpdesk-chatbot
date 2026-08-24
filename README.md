@@ -201,6 +201,8 @@ Les variables d'environnement sont définies dans `.env` :
 | `OLLAMA_API_KEY` | Clé API Ollama si un proxy/authentification est utilisé | vide |
 | `DATABASE_URL` | Connexion PostgreSQL | voir `.env.example` |
 | `REDIS_URL` | Connexion Redis | `redis://redis:6379/0` |
+| `EMBEDDING_MODEL` | Modèle Sentence-Transformers pour la KB (RAG) | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
+| `KB_USE_DEFAULT_EMBEDDING` | `true` pour utiliser l'embedding par défaut de Chroma | `false` |
 | `RATE_LIMIT_REQUESTS` | Requêtes max / fenêtre | `30` |
 | `CACHE_TTL_SECONDS` | Durée du cache | `300` |
 

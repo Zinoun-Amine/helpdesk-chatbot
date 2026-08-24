@@ -7,12 +7,15 @@ import DashboardPage from './components/DashboardPage';
 import SettingsPage from './components/SettingsPage';
 import TicketDraftModal from './components/TicketDraftModal';
 import LoginPage from './components/LoginPage';
+import SignupPage from './components/SignupPage';
 import { useChat } from './hooks/useChat';
 import { useTheme } from './hooks/useTheme';
+import { useAuth } from './hooks/useAuth';
 import * as api from './services/api';
 
 function App() {
   const { themeMode, toggleTheme } = useTheme();
+  const { user, login, signup, logout } = useAuth();
   const [activeView, setActiveView] = useState('chat');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -22,13 +25,9 @@ function App() {
   const [draftInitialValues, setDraftInitialValues] = useState(null);
   const [draftSaving, setDraftSaving] = useState(false);
   const [draftError, setDraftError] = useState(null);
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(window.localStorage.getItem('autohall-user')) || null;
-    } catch {
-      return null;
-    }
-  });
+  // Vue d'auth affichée quand il n'y a pas d'utilisateur connecté.
+  // 'login' = page de connexion, 'signup' = page d'inscription.
+  const [authView, setAuthView] = useState('login');
   const {
     messages,
     sendMessage,
@@ -57,23 +56,27 @@ function App() {
     setSidebarOpen(false);
   };
 
-  const handleLogin = (userData) => {
-    setUser(userData);
-    try {
-      window.localStorage.setItem('autohall-user', JSON.stringify(userData));
-    } catch {
-      // ignore localStorage errors
-    }
+  /**
+   * Appelé par LoginPage. Doit throw pour afficher un message d'erreur.
+   * Après succès, l'utilisateur est persisté via `useAuth.login`.
+   */
+  const handleLogin = async (email, password) => {
+    await login(email, password);
+    setActiveView('chat');
+  };
+
+  /**
+   * Appelé par SignupPage. Doit throw pour afficher un message d'erreur.
+   * Après succès, l'utilisateur est persisté via `useAuth.signup`.
+   */
+  const handleSignup = async (email, fullName, password) => {
+    await signup(email, fullName, password);
     setActiveView('chat');
   };
 
   const handleLogout = () => {
-    setUser(null);
-    try {
-      window.localStorage.removeItem('autohall-user');
-    } catch {
-      // ignore localStorage errors
-    }
+    logout();
+    setAuthView('login');
     clearChat();
   };
 
@@ -92,7 +95,7 @@ function App() {
       const payload = {
         messages: messages.map(message => ({ role: message.role, content: message.content })),
         conversation_id: conversationId,
-        user_name: user?.name || 'Utilisateur AUTOHALL',
+        user_name: user?.full_name || 'Utilisateur AUTOHALL',
         user_email: user?.email || 'employe.fictif@autohall.ma',
       };
       const suggestion = await api.draftTicketFromConversation(payload);
@@ -101,7 +104,7 @@ function App() {
         status: 'Open',
         ticket_type: 1,
         conversation_id: conversationId,
-        user_name: user?.name || 'Utilisateur AUTOHALL',
+        user_name: user?.full_name || 'Utilisateur AUTOHALL',
         user_email: user?.email || 'employe.fictif@autohall.ma',
       });
       setDraftModalOpen(true);
@@ -134,7 +137,17 @@ function App() {
 
 
   if (!user) {
-    return <LoginPage onLogin={handleLogin} />;
+    return authView === 'signup' ? (
+      <SignupPage
+        onSignup={handleSignup}
+        onSwitchToLogin={() => setAuthView('login')}
+      />
+    ) : (
+      <LoginPage
+        onLogin={handleLogin}
+        onSwitchToSignup={() => setAuthView('signup')}
+      />
+    );
   }
 
   return (
@@ -173,7 +186,7 @@ function App() {
             )}
             <div className="hidden sm:flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <div>
-                <div className="font-semibold">{user.name}</div>
+                <div className="font-semibold">{user.full_name}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">{user.email}</div>
               </div>
               <button onClick={handleLogout} className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Déconnexion</button>

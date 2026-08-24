@@ -10,7 +10,7 @@ async def load_knowledge_base(vector_store: VectorStore):
     Charge les données depuis le fichier JSON et les indexe dans ChromaDB.
     A exécuter au démarrage de l'application (lifespan).
     """
-    file_path = os.path.join(os.path.dirname(__file__), "knowledge_data.json")
+    file_path = os.path.join(os.path.dirname(__file__), "knowledge_base.json")
     
     try:
         if not os.path.exists(file_path):
@@ -28,6 +28,6 @@ async def load_knowledge_base(vector_store: VectorStore):
         logger.info(f"Base de connaissances chargée avec succès. ({len(data)} fiches)")
         
     except json.JSONDecodeError:
-        logger.error("Erreur de format dans le fichier knowledge_data.json")
+        logger.error("Erreur de format dans le fichier knowledge_base.json")
     except Exception as e:
         logger.error(f"Erreur inattendue lors du chargement de la base de connaissances: {e}")

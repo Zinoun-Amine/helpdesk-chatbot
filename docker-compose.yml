@@ -1,4 +1,5 @@
 services:
+  # ── Backend FastAPI ──────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -25,12 +26,14 @@ services:
       redis:
         condition: service_healthy
       chromadb:
-        condition: service_healthy
+        condition: service_started   # starts even if healthcheck fails
     volumes:
       - ./backend:/app
     restart: unless-stopped
+    networks:
+      - autohall_net
 
-  # ── Frontend React + Vite ───────────────────────────────────
+  # ── Frontend React + Vite ────────────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -44,8 +47,10 @@ services:
       - ./frontend:/app
       - /app/node_modules
     restart: unless-stopped
+    networks:
+      - autohall_net
 
-  # ── PostgreSQL 16 ──────────────────────────────────────────
+  # ── PostgreSQL 16 ─────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: autohall_postgres
@@ -54,7 +59,7 @@ services:
       POSTGRES_PASSWORD: chatbot_pass
       POSTGRES_DB: chatbot_db
     ports:
-      - "5432:5432"
+      - "5433:5432"   # host port changed to avoid conflict with local PostgreSQL
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -65,8 +70,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - autohall_net
 
-  # ── Redis 7 (cache + rate limiting) ────────────────────────
+  # ── Redis 7 ────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: autohall_redis
@@ -80,10 +87,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - autohall_net
 
-  # ── ChromaDB (base vectorielle pour RAG) ────────────────────
+  # ── ChromaDB (vector DB for RAG) ──────────────────────────────
   chromadb:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.5.0   # works with NumPy 2.0
     container_name: autohall_chromadb
     ports:
       - "8001:8000"
@@ -93,12 +102,20 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
     healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/8000'"]
-      interval: 5s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')"]
+      interval: 30s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - autohall_net
 
+# ── Networks ──────────────────────────────────────────────────────
+networks:
+  autohall_net:
+    driver: bridge
+
+# ── Volumes ──────────────────────────────────────────────────────
 volumes:
   postgres_data:
   redis_data:

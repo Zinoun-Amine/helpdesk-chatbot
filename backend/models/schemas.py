@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -273,3 +273,38 @@ class ProviderTestResult(BaseModel):
 class CategoryResponse(BaseModel):
     name: str
     description: Optional[str] = None
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────
+
+class UserCreate(BaseModel):
+    """Payload pour l'inscription (signup)."""
+    email: EmailStr
+    full_name: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=6, max_length=128)
+
+
+class UserLogin(BaseModel):
+    """Payload pour la connexion (login)."""
+    email: EmailStr
+    password: str
+
+
+class UserResponse(BaseModel):
+    """Profil utilisateur (jamais le mot de passe)."""
+    id: int
+    email: EmailStr
+    full_name: str
+    role: str
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TokenResponse(BaseModel):
+    """Réponse d'authentification : token JWT + profil utilisateur."""
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

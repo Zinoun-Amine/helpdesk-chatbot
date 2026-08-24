@@ -1,9 +1,37 @@
 import { API_BASE_URL, apiError } from './apiConfig';
 
+const TOKEN_KEY = 'autohall-token';
+
+function readStoredToken() {
+  try {
+    return window.localStorage.getItem(TOKEN_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Injecte automatiquement le JWT dans le header `Authorization: Bearer …`
+ * si un token est présent dans le localStorage. Les appelants existants
+ * peuvent continuer à passer leurs propres headers (Content-Type, etc.)
+ * — l'objet `options.headers` est fusionné avec ceux-ci.
+ */
+function withAuthHeaders(options = {}) {
+  const token = readStoredToken();
+  const incomingHeaders = options.headers || {};
+  return {
+    ...options,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...incomingHeaders,
+    },
+  };
+}
+
 async function requestJSON(url, options = {}) {
   let res;
   try {
-    res = await fetch(url, options);
+    res = await fetch(url, withAuthHeaders(options));
   } catch (error) {
     throw apiError(error, url);
   }

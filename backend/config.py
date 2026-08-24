@@ -58,9 +58,37 @@ class Settings(BaseSettings):
     # ChromaDB
     CHROMA_HOST: str = "localhost"
     CHROMA_PORT: int = 8000
+
+    # Embedding model for the RAG knowledge base.
+    # Default = French-capable multilingual MiniLM (better French synonyms than
+    # Chroma's built-in English-leaning default).
+    # Set KB_USE_DEFAULT_EMBEDDING=true to opt out and use Chroma's default.
+    EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    KB_USE_DEFAULT_EMBEDDING: bool = False
+
+    # Hybrid retrieval (chunking + BM25 + semantic merge)
+    KB_CHUNK_SIZE: int = 220            # chunk size in words
+    KB_CHUNK_OVERLAP: int = 40          # overlap between consecutive chunks (words)
+    KB_SEMANTIC_WEIGHT: float = 0.7     # weight of semantic (Chroma) score
+    KB_BM25_WEIGHT: float = 0.3         # weight of BM25 score in the hybrid merge
+    KB_HYBRID_MIN_SCORE: float = 0.25   # threshold below which a hybrid result is dropped
+
+    # Optional cross-encoder reranker (Phase 3).
+    # OFF by default — small CPU/RAM cost, ~50–200ms extra latency on first call.
+    # Set KB_RERANKER_ENABLED=true to activate. Pairs each candidate with the
+    # query and reorders by the cross-encoder score (more accurate than cosine).
+    KB_RERANKER_ENABLED: bool = False
+    KB_RERANKER_MODEL: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+    KB_RERANKER_TOP_N: int = 10         # max candidates to rerank (cap for latency)
     
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+
+    # Auth / JWT
+    # ⚠️ JWT_SECRET_KEY DOIT être changé en production via la variable d'env.
+    JWT_SECRET_KEY: str = "change-me-in-production-please"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24h par défaut
     
     # Rate Limiting & Cache
     RATE_LIMIT_REQUESTS: int = 20

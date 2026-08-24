@@ -6,6 +6,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
 sse-starlette==2.1.0
+email-validator>=2.0.0
 
 # Base de données
 asyncpg==0.31.0
@@ -30,6 +31,12 @@ numpy<2.0
 # Embeddings
 sentence-transformers==3.0.0
 
+# Lexical retrieval (BM25) — used by the RAG hybrid search
+rank-bm25==0.2.2
+
+# Cross-encoder reranker (optional, opt-in via KB_RERANKER_ENABLED).
+# Already covered by sentence-transformers — no new dep needed.
+
 # Validation & sérialisation
 pydantic==2.8.0
 pydantic-settings==2.3.0
@@ -37,3 +44,8 @@ pydantic-settings==2.3.0
 # Utilitaires
 python-dotenv==1.0.1
 python-multipart==0.0.9
+
+# Auth (JWT + hash mot de passe + validation email)
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+email-validator==2.2.0

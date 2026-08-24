@@ -110,6 +110,21 @@ async def apply_migrations(engine: AsyncEngine) -> None:
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
         """,
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            full_name VARCHAR(255) NOT NULL,
+            hashed_password TEXT NOT NULL,
+            role VARCHAR(32) NOT NULL DEFAULT 'user',
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+        """,
     ]
 
     async with engine.begin() as conn:
