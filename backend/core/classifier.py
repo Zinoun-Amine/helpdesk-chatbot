@@ -6,13 +6,18 @@ from core.llm_provider import LLMProvider
 
 logger = logging.getLogger(__name__)
 
-# Les 23 catégories métier IT pour AUTOHALL
+# Les 47 catégories métier IT validées depuis ticket.xlsx
 CATEGORIES = [
-    "Wincar", "Messagerie", "Citrix", "Matériel", "Internet", 
-    "Logiciel Système", "Sage", "Windows", "APPCC", "Réseau", 
-    "Ligne VPN", "GestorNet", "CRM", "Poste IP Phone", "Outillages SAV",
-    "Bureautique", "Imprimante", "Sécurité", "Serveur", "Téléphonie Mobile",
-    "Application Métier Autre", "ERP", "Accès distant"
+    "Wincar", "Messagerie", "Citrix", "Matériel", "Internet",
+    "Logiciel Système", "Sage", "Windows", "APPCC", "Réseau",
+    "Outillages SAV", "GestorNet", "CRM", "Auto Naps", "Poste IP Phone",
+    "Reporting", "Ligne VPN", "Consommable", "Ligne Téléphonique", "GSM",
+    "Moovapps", "PayRoll", "RIAPP", "Qalitel Doc", "GDoc",
+    "Contrat de Vente", "Sage Paie & RH", "Microsoft Teams", "WebEX",
+    "GENERAFI", "Site Web", "AppGCMA", "VPN_FortiClient", "Fidélisation",
+    "Optimmo", "SMS", "SRM", "Qalitel Compar", "Antivirus", "SLV",
+    "VOXCO", "Intranet", "Devopps", "C.Conformité", "eSeller", "TPE",
+    "OPEL"
 ]
 
 class Classifier:

@@ -101,6 +101,34 @@ async def apply_migrations(engine: AsyncEngine) -> None:
         ON CONFLICT (id) DO NOTHING;
         """,
         """
+        INSERT INTO categories (name, description) VALUES
+            ('RIAPP', 'Application RIAPP'),
+            ('Qalitel Doc', 'Plateforme Qalitel Doc'),
+            ('GDoc', 'Application GDoc'),
+            ('Contrat de Vente', 'Gestion des contrats de vente'),
+            ('Sage Paie & RH', 'Sage paie et ressources humaines'),
+            ('Microsoft Teams', 'Collaboration et visioconférence Microsoft Teams'),
+            ('WebEX', 'Visioconférence WebEX'),
+            ('GENERAFI', 'Application GENERAFI'),
+            ('Site Web', 'Site web AUTOHALL'),
+            ('AppGCMA', 'Application AppGCMA'),
+            ('VPN_FortiClient', 'Client VPN FortiClient'),
+            ('Fidélisation', 'Application de fidélisation'),
+            ('Optimmo', 'Application Optimmo'),
+            ('SMS', 'Services SMS'),
+            ('Qalitel Compar', 'Application Qalitel Compar'),
+            ('Antivirus', 'Protection antivirus'),
+            ('SLV', 'Application SLV'),
+            ('VOXCO', 'Application VOXCO'),
+            ('Intranet', 'Intranet AUTOHALL'),
+            ('Devopps', 'Outils Devopps'),
+            ('C.Conformité', 'Application C.Conformité'),
+            ('eSeller', 'Application eSeller'),
+            ('TPE', 'Terminaux de paiement électronique'),
+            ('OPEL', 'Applications et outils OPEL')
+        ON CONFLICT (name) DO NOTHING;
+        """,
+        """
         CREATE TABLE IF NOT EXISTS chat_feedback (
             id SERIAL PRIMARY KEY,
             conversation_id INTEGER REFERENCES conversations(id) ON DELETE SET NULL,
@@ -172,6 +200,30 @@ async def apply_migrations(engine: AsyncEngine) -> None:
                 """
             )
         )
+
+        # ⚠️ DELETE and INSERT are now separate calls – this prevents asyncpg error
+        await conn.execute(
+            text(
+                """
+                DELETE FROM technicians
+                WHERE email IN (
+                    'support.riapp@autohall.ma', 'support.qalitel-doc@autohall.ma',
+                    'support.gdoc@autohall.ma', 'support.contrat-vente@autohall.ma',
+                    'support.sage-paie-rh@autohall.ma', 'support.microsoft-teams@autohall.ma',
+                    'support.webex@autohall.ma', 'support.generafi@autohall.ma',
+                    'support.site-web@autohall.ma', 'support.appgcma@autohall.ma',
+                    'support.vpn-forticlient@autohall.ma', 'support.fidelisation@autohall.ma',
+                    'support.optimmo@autohall.ma', 'support.sms@autohall.ma',
+                    'support.qalitel-compar@autohall.ma', 'support.antivirus@autohall.ma',
+                    'support.slv@autohall.ma', 'support.voxco@autohall.ma',
+                    'support.intranet@autohall.ma', 'support.devopps@autohall.ma',
+                    'support.conformite@autohall.ma', 'support.eseller@autohall.ma',
+                    'support.tpe@autohall.ma', 'support.opel@autohall.ma'
+                );
+                """
+            )
+        )
+
         await conn.execute(
             text(
                 """
@@ -199,11 +251,36 @@ async def apply_migrations(engine: AsyncEngine) -> None:
                     ('Yacine Debbagh', 'yacine.debbagh@autohall.ma', 'Support GSM / smartphones', 'GSM', (SELECT id FROM categories WHERE name = 'GSM'), true),
                     ('Hicham Regragui', 'hicham.regragui@autohall.ma', 'Support Moovapps / GED', 'Moovapps', (SELECT id FROM categories WHERE name = 'Moovapps'), true),
                     ('Nadia El Yacoubi', 'nadia.elyacoubi@autohall.ma', 'Support PayRoll / paie', 'PayRoll', (SELECT id FROM categories WHERE name = 'PayRoll'), true),
-                    ('Imane Zaki', 'imane.zaki@autohall.ma', 'Support SRM / achats fournisseurs', 'SRM', (SELECT id FROM categories WHERE name = 'SRM'), true)
+                    ('Imane Zaki', 'imane.zaki@autohall.ma', 'Support SRM / achats fournisseurs', 'SRM', (SELECT id FROM categories WHERE name = 'SRM'), true),
+                    ('Hamza El Mansouri', 'hamza.elmansouri@autohall.ma', 'Support RIAPP', 'RIAPP', (SELECT id FROM categories WHERE name = 'RIAPP'), true),
+                    ('Imane Berrada', 'imane.berrada@autohall.ma', 'Support Qalitel Doc', 'Qalitel Doc', (SELECT id FROM categories WHERE name = 'Qalitel Doc'), true),
+                    ('Rachid Alaoui', 'rachid.alaoui@autohall.ma', 'Support GDoc', 'GDoc', (SELECT id FROM categories WHERE name = 'GDoc'), true),
+                    ('Salma Bennani', 'salma.bennani@autohall.ma', 'Support contrats de vente', 'Contrat de Vente', (SELECT id FROM categories WHERE name = 'Contrat de Vente'), true),
+                    ('Adil Chafik', 'adil.chafik@autohall.ma', 'Support Sage Paie et RH', 'Sage Paie & RH', (SELECT id FROM categories WHERE name = 'Sage Paie & RH'), true),
+                    ('Oumaima El Fassi', 'oumaima.elfassi@autohall.ma', 'Support Microsoft Teams', 'Microsoft Teams', (SELECT id FROM categories WHERE name = 'Microsoft Teams'), true),
+                    ('Bilal Amrani', 'bilal.amrani@autohall.ma', 'Support WebEX', 'WebEX', (SELECT id FROM categories WHERE name = 'WebEX'), true),
+                    ('Hajar Naciri', 'hajar.naciri@autohall.ma', 'Support GENERAFI', 'GENERAFI', (SELECT id FROM categories WHERE name = 'GENERAFI'), true),
+                    ('Ayoub Tazi', 'ayoub.tazi@autohall.ma', 'Support site web', 'Site Web', (SELECT id FROM categories WHERE name = 'Site Web'), true),
+                    ('Wiam El Khatib', 'wiam.elkhatib@autohall.ma', 'Support AppGCMA', 'AppGCMA', (SELECT id FROM categories WHERE name = 'AppGCMA'), true),
+                    ('Ismail Rahmani', 'ismail.rahmani@autohall.ma', 'Support VPN FortiClient', 'VPN_FortiClient', (SELECT id FROM categories WHERE name = 'VPN_FortiClient'), true),
+                    ('Mariam Zahir', 'mariam.zahir@autohall.ma', 'Support fidélisation', 'Fidélisation', (SELECT id FROM categories WHERE name = 'Fidélisation'), true),
+                    ('Soufiane Idrissi', 'soufiane.idrissi@autohall.ma', 'Support Optimmo', 'Optimmo', (SELECT id FROM categories WHERE name = 'Optimmo'), true),
+                    ('Chaimae Ait Lahcen', 'chaimae.aitlahcen@autohall.ma', 'Support SMS', 'SMS', (SELECT id FROM categories WHERE name = 'SMS'), true),
+                    ('Yassine El Ouardi', 'yassine.elouardi@autohall.ma', 'Support Qalitel Compar', 'Qalitel Compar', (SELECT id FROM categories WHERE name = 'Qalitel Compar'), true),
+                    ('Hind Bennis', 'hind.bennis@autohall.ma', 'Support antivirus', 'Antivirus', (SELECT id FROM categories WHERE name = 'Antivirus'), true),
+                    ('Noura El Kadi', 'noura.elkadi@autohall.ma', 'Support SLV', 'SLV', (SELECT id FROM categories WHERE name = 'SLV'), true),
+                    ('Mehdi Rahal', 'mehdi.rahal@autohall.ma', 'Support VOXCO', 'VOXCO', (SELECT id FROM categories WHERE name = 'VOXCO'), true),
+                    ('Kawtar Benjelloun', 'kawtar.benjelloun@autohall.ma', 'Support intranet', 'Intranet', (SELECT id FROM categories WHERE name = 'Intranet'), true),
+                    ('Anass El Ghazali', 'anass.elghazali@autohall.ma', 'Support Devopps', 'Devopps', (SELECT id FROM categories WHERE name = 'Devopps'), true),
+                    ('Siham Lahlou', 'siham.lahlou@autohall.ma', 'Support conformité', 'C.Conformité', (SELECT id FROM categories WHERE name = 'C.Conformité'), true),
+                    ('Zakaria El Haddad', 'zakaria.elhaddad@autohall.ma', 'Support eSeller', 'eSeller', (SELECT id FROM categories WHERE name = 'eSeller'), true),
+                    ('Amina Bouazza', 'amina.bouazza@autohall.ma', 'Support terminaux de paiement', 'TPE', (SELECT id FROM categories WHERE name = 'TPE'), true),
+                    ('Tarik Azzouzi', 'tarik.azzouzi@autohall.ma', 'Support OPEL', 'OPEL', (SELECT id FROM categories WHERE name = 'OPEL'), true)
                 ON CONFLICT (email) DO NOTHING;
                 """
             )
         )
+
         await conn.execute(
             text(
                 """

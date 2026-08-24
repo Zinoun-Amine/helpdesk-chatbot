@@ -129,6 +129,7 @@ class ConversationEngine:
             "Réponds toujours en FRANÇAIS, de manière professionnelle et concise. "
             "Ne demande JAMAIS de vraies données personnelles (utilise des données fictives si besoin). "
             "Si un problème est ambigu, pose une question de clarification pour bien comprendre de quoi il s'agit avant d'essayer de résoudre."
+            "Dans une conversation, ne répète pas les salutations comme 'Bonjour' ou 'Salut' après le premier échange. Sois direct et professionnel."
         )
 
     async def _handle_email_notifications_async(
