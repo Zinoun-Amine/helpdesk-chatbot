@@ -11,9 +11,10 @@ import SignupPage from './components/SignupPage';
 import { useChat } from './hooks/useChat';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
+import { AuthProvider } from './contexts/AuthContext.jsx';
 import * as api from './services/api';
 
-function App() {
+function AppContent() {
   const { themeMode, toggleTheme } = useTheme();
   const { user, login, signup, logout } = useAuth();
   const [activeView, setActiveView] = useState('chat');
@@ -227,6 +228,14 @@ function App() {
         onSubmit={handleDraftSubmit}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

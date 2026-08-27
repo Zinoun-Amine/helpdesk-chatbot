@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 from typing import List, Dict, Any, AsyncGenerator, Optional
 
 from core.llm_provider import LLMProvider
@@ -45,6 +46,21 @@ TICKET_REQUEST_MARKERS = (
     "je veux contacter le support",
     "je souhaite créer un ticket",
     "je souhaite un ticket",
+)
+
+TICKET_STATUS_MARKERS = (
+    "état du ticket",
+    "etat du ticket",
+    "statut du ticket",
+    "status du ticket",
+    "état ticket",
+    "etat ticket",
+    "statut ticket",
+    "status ticket",
+    "où en est le ticket",
+    "ou en est le ticket",
+    "ticket status",
+    "ticket state",
 )
 
 
@@ -132,6 +148,45 @@ class ConversationEngine:
             "Dans une conversation, ne répète pas les salutations comme 'Bonjour' ou 'Salut' après le premier échange. Sois direct et professionnel."
         )
 
+    @staticmethod
+    def _extract_ticket_id(message: str) -> Optional[int]:
+        """Extrait un identifiant précédé de '#' ou du mot ticket."""
+        hash_match = re.search(r"#\s*(\d+)\b", message)
+        if hash_match:
+            return int(hash_match.group(1))
+
+        ticket_match = re.search(
+            r"\bticket\s*(?:n(?:um(?:éro|ero)?)?|no|°|#)?\s*(\d+)\b",
+            message,
+            flags=re.IGNORECASE,
+        )
+        return int(ticket_match.group(1)) if ticket_match else None
+
+    @classmethod
+    def _is_ticket_status_query(cls, message: str) -> bool:
+        normalized = message.lower()
+        return cls._extract_ticket_id(message) is not None and any(
+            marker in normalized for marker in TICKET_STATUS_MARKERS
+        )
+
+    async def _handle_ticket_status_query(self, message: str) -> Optional[str]:
+        """Retourne une réponse de statut sans classifier ni créer de ticket."""
+        ticket_id = self._extract_ticket_id(message)
+        if ticket_id is None:
+            return None
+
+        ticket = await self.ticket_service.get_ticket(ticket_id)
+        if not ticket:
+            return f"Le ticket **#{ticket_id}** est introuvable."
+
+        created_at = ticket.created_at.strftime("%d/%m/%Y à %H:%M")
+        technician = ticket.assigned_to_name or "aucun technicien assigné"
+        return (
+            f"Le ticket **#{ticket.id}** est actuellement en statut **{ticket.status}**, "
+            f"catégorie **{ticket.category}**, priorité **{ticket.priority}**, "
+            f"assigné à **{technician}**, créé le **{created_at}**."
+        )
+
     async def _handle_email_notifications_async(
         self,
         ticket_id: int,
@@ -195,6 +250,13 @@ class ConversationEngine:
             yield {"type": "action", "action": "conversation_context", "conversation_id": conversation_id}
 
         normalized_message = user_message.strip().lower()
+        if self._is_ticket_status_query(user_message):
+            status_response = await self._handle_ticket_status_query(user_message)
+            if status_response:
+                yield {"type": "token", "content": status_response}
+                yield {"type": "response_complete"}
+            return
+
         greeting_only = (
             normalized_message
             and len(normalized_message) <= 20

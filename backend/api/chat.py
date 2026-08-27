@@ -24,6 +24,7 @@ from services.cache_service import CacheService
 from services.conversation_service import ConversationService
 from services.settings_service import SettingsService
 from core.conversation_engine import ConversationEngine
+from core.security import get_current_user
 from config import settings
 from integrations.glpi_client import GLPIClient
 from services import ollama_memory
@@ -122,11 +123,15 @@ async def add_chat_feedback(
 async def chat_endpoint(
     request: Request, 
     chat_request: ChatRequest, 
-    db: Optional[AsyncSession] = Depends(get_db)
+    db: Optional[AsyncSession] = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Endpoint principal pour le chat. Renvoie une réponse SSE (Server-Sent Events).
     """
+    chat_request.user_name = current_user["full_name"]
+    chat_request.user_email = current_user["email"]
+
     client_ip = request.client.host if request.client else "127.0.0.1"
     
     # 1. Rate Limiting

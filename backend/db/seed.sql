@@ -1,10 +1,5 @@
--- ============================================================
--- Seed PostgreSQL — Données 100% FICTIVES
--- Ordre : categories → technicians → conversations → tickets
---          → messages → email_drafts
--- ============================================================
 
--- ── 1) Catégories métier AUTOHALL ────────────────────────────
+-- ── 1) Catégories
 INSERT INTO categories (name, description) VALUES
     ('Wincar', 'Logiciel de gestion automobile Wincar — facturation, stock, commandes'),
     ('Messagerie', 'Messagerie électronique — Outlook, Exchange, configuration email'),
@@ -55,55 +50,12 @@ INSERT INTO categories (name, description) VALUES
     ('OPEL', 'Applications et outils OPEL')
 ON CONFLICT (name) DO NOTHING;
 
--- ── 2) Techniciens (1 tech par catégorie) ────────────────────
+-- ── 2) Techniciens (4 responsables avec catégories équilibrées) ──
 INSERT INTO technicians (full_name, email, role, team, category_id, active) VALUES
-    ('Amine Zinoun',       'amine.spk.zinoun@gmail.com',       'Support Wincar',                'Wincar',             (SELECT id FROM categories WHERE name = 'Wincar'),             TRUE),
-    ('Sofia El Idrissi',   'sofia.elidrissi@autohall.ma',    'Support messagerie / Outlook',              'Messagerie',         (SELECT id FROM categories WHERE name = 'Messagerie'),         TRUE),
-    ('Youssef Bensaid',    'youssef.bensaid@autohall.ma',    'Support Citrix / virtualisation',           'Citrix',             (SELECT id FROM categories WHERE name = 'Citrix'),             TRUE),
-    ('Nabil Cherkaoui',    'nabil.cherkaoui@autohall.ma',    'Support matériel et périphériques',         'Matériel',           (SELECT id FROM categories WHERE name = 'Matériel'),           TRUE),
-    ('Hassan Rami',        'hassan.rami@autohall.ma',        'Support accès internet / réseau',           'Internet',           (SELECT id FROM categories WHERE name = 'Internet'),           TRUE),
-    ('Karim Tazi',         'karim.tazi@autohall.ma',         'Support logiciels système',                 'Logiciel Système',   (SELECT id FROM categories WHERE name = 'Logiciel Système'),   TRUE),
-    ('Leila Mounir',       'leila.mounir@autohall.ma',       'Support Sage / comptabilité',               'Sage',               (SELECT id FROM categories WHERE name = 'Sage'),               TRUE),
-    ('Omar Fassi',         'omar.fassi@autohall.ma',         'Support Windows / postes',                  'Windows',            (SELECT id FROM categories WHERE name = 'Windows'),            TRUE),
-    ('Reda Najmi',         'reda.najmi@autohall.ma',         'Support APPCC / conformité',                'APPCC',              (SELECT id FROM categories WHERE name = 'APPCC'),              TRUE),
-    ('Zakaria Benali',     'zakaria.benali@autohall.ma',     'Support réseau / Wi-Fi / switches',         'Réseau',             (SELECT id FROM categories WHERE name = 'Réseau'),             TRUE),
-    ('Mehdi Essalhi',      'mehdi.essalhi@autohall.ma',      'Support outillages SAV / diagnostics',      'Outillages SAV',     (SELECT id FROM categories WHERE name = 'Outillages SAV'),     TRUE),
-    ('Salma Karim',        'salma.karim@autohall.ma',        'Support GestorNet / workflow',              'GestorNet',          (SELECT id FROM categories WHERE name = 'GestorNet'),          TRUE),
-    ('Mohamed Aouad',      'mohamed.aouad@autohall.ma',      'Support CRM / données clients',             'CRM',                (SELECT id FROM categories WHERE name = 'CRM'),                TRUE),
-    ('Ilyas Oulhaj',       'ilyas.oulhaj@autohall.ma',       'Support Auto Naps / planification atelier', 'Auto Naps',          (SELECT id FROM categories WHERE name = 'Auto Naps'),          TRUE),
-    ('Anas Choukri',       'anas.choukri@autohall.ma',       'Support téléphonie IP / postes',            'Poste IP Phone',     (SELECT id FROM categories WHERE name = 'Poste IP Phone'),     TRUE),
-    ('Sara Bourou',        'sara.bourou@autohall.ma',        'Support reporting / BI',                    'Reporting',          (SELECT id FROM categories WHERE name = 'Reporting'),          TRUE),
-    ('Samir Lahmadi',      'samir.lahmadi@autohall.ma',      'Support VPN / accès distant',               'Ligne VPN',          (SELECT id FROM categories WHERE name = 'Ligne VPN'),          TRUE),
-    ('Fouad Lahlou',       'fouad.lahlou@autohall.ma',       'Support consommables / matériel de bureau', 'Consommable',        (SELECT id FROM categories WHERE name = 'Consommable'),        TRUE),
-    ('Mounir Sefrioui',    'mounir.sefrioui@autohall.ma',    'Support lignes téléphoniques',              'Ligne Téléphonique', (SELECT id FROM categories WHERE name = 'Ligne Téléphonique'), TRUE),
-    ('Yacine Debbagh',     'yacine.debbagh@autohall.ma',     'Support GSM / smartphones',                 'GSM',                (SELECT id FROM categories WHERE name = 'GSM'),                TRUE),
-    ('Hicham Regragui',    'hicham.regragui@autohall.ma',    'Support Moovapps / GED',                    'Moovapps',           (SELECT id FROM categories WHERE name = 'Moovapps'),           TRUE),
-    ('Nadia El Yacoubi',   'nadia.elyacoubi@autohall.ma',    'Support PayRoll / paie',                    'PayRoll',            (SELECT id FROM categories WHERE name = 'PayRoll'),            TRUE),
-    ('Imane Zaki',        'imane.zaki@autohall.ma',        'Support SRM / achats fournisseurs',         'SRM',                 (SELECT id FROM categories WHERE name = 'SRM'),                 TRUE),
-    ('Hamza El Mansouri', 'hamza.elmansouri@autohall.ma', 'Support RIAPP', 'RIAPP', (SELECT id FROM categories WHERE name = 'RIAPP'), TRUE),
-    ('Imane Berrada', 'imane.berrada@autohall.ma', 'Support Qalitel Doc', 'Qalitel Doc', (SELECT id FROM categories WHERE name = 'Qalitel Doc'), TRUE),
-    ('Rachid Alaoui', 'rachid.alaoui@autohall.ma', 'Support GDoc', 'GDoc', (SELECT id FROM categories WHERE name = 'GDoc'), TRUE),
-    ('Salma Bennani', 'salma.bennani@autohall.ma', 'Support contrats de vente', 'Contrat de Vente', (SELECT id FROM categories WHERE name = 'Contrat de Vente'), TRUE),
-    ('Adil Chafik', 'adil.chafik@autohall.ma', 'Support Sage Paie et RH', 'Sage Paie & RH', (SELECT id FROM categories WHERE name = 'Sage Paie & RH'), TRUE),
-    ('Oumaima El Fassi', 'oumaima.elfassi@autohall.ma', 'Support Microsoft Teams', 'Microsoft Teams', (SELECT id FROM categories WHERE name = 'Microsoft Teams'), TRUE),
-    ('Bilal Amrani', 'bilal.amrani@autohall.ma', 'Support WebEX', 'WebEX', (SELECT id FROM categories WHERE name = 'WebEX'), TRUE),
-    ('Hajar Naciri', 'hajar.naciri@autohall.ma', 'Support GENERAFI', 'GENERAFI', (SELECT id FROM categories WHERE name = 'GENERAFI'), TRUE),
-    ('Ayoub Tazi', 'ayoub.tazi@autohall.ma', 'Support site web', 'Site Web', (SELECT id FROM categories WHERE name = 'Site Web'), TRUE),
-    ('Wiam El Khatib', 'wiam.elkhatib@autohall.ma', 'Support AppGCMA', 'AppGCMA', (SELECT id FROM categories WHERE name = 'AppGCMA'), TRUE),
-    ('Ismail Rahmani', 'ismail.rahmani@autohall.ma', 'Support VPN FortiClient', 'VPN_FortiClient', (SELECT id FROM categories WHERE name = 'VPN_FortiClient'), TRUE),
-    ('Mariam Zahir', 'mariam.zahir@autohall.ma', 'Support fidélisation', 'Fidélisation', (SELECT id FROM categories WHERE name = 'Fidélisation'), TRUE),
-    ('Soufiane Idrissi', 'soufiane.idrissi@autohall.ma', 'Support Optimmo', 'Optimmo', (SELECT id FROM categories WHERE name = 'Optimmo'), TRUE),
-    ('Chaimae Ait Lahcen', 'chaimae.aitlahcen@autohall.ma', 'Support SMS', 'SMS', (SELECT id FROM categories WHERE name = 'SMS'), TRUE),
-    ('Yassine El Ouardi', 'yassine.elouardi@autohall.ma', 'Support Qalitel Compar', 'Qalitel Compar', (SELECT id FROM categories WHERE name = 'Qalitel Compar'), TRUE),
-    ('Hind Bennis', 'hind.bennis@autohall.ma', 'Support antivirus', 'Antivirus', (SELECT id FROM categories WHERE name = 'Antivirus'), TRUE),
-    ('Noura El Kadi', 'noura.elkadi@autohall.ma', 'Support SLV', 'SLV', (SELECT id FROM categories WHERE name = 'SLV'), TRUE),
-    ('Mehdi Rahal', 'mehdi.rahal@autohall.ma', 'Support VOXCO', 'VOXCO', (SELECT id FROM categories WHERE name = 'VOXCO'), TRUE),
-    ('Kawtar Benjelloun', 'kawtar.benjelloun@autohall.ma', 'Support intranet', 'Intranet', (SELECT id FROM categories WHERE name = 'Intranet'), TRUE),
-    ('Anass El Ghazali', 'anass.elghazali@autohall.ma', 'Support Devopps', 'Devopps', (SELECT id FROM categories WHERE name = 'Devopps'), TRUE),
-    ('Siham Lahlou', 'siham.lahlou@autohall.ma', 'Support conformité', 'C.Conformité', (SELECT id FROM categories WHERE name = 'C.Conformité'), TRUE),
-    ('Zakaria El Haddad', 'zakaria.elhaddad@autohall.ma', 'Support eSeller', 'eSeller', (SELECT id FROM categories WHERE name = 'eSeller'), TRUE),
-    ('Amina Bouazza', 'amina.bouazza@autohall.ma', 'Support terminaux de paiement', 'TPE', (SELECT id FROM categories WHERE name = 'TPE'), TRUE),
-    ('Tarik Azzouzi', 'tarik.azzouzi@autohall.ma', 'Support OPEL', 'OPEL', (SELECT id FROM categories WHERE name = 'OPEL'), TRUE)
+    ('Amine Zinoun', 'amine.spk.zinoun@gmail.com', 'Support IT', 'AUTOHALL IT', NULL, TRUE),
+    ('Sofia El Idrissi', 'sofia.elidrissi@autohall.ma', 'Support IT', 'AUTOHALL IT', NULL, TRUE),
+    ('Youssef Bensaid', 'youssef.bensaid@autohall.ma', 'Support IT', 'AUTOHALL IT', NULL, TRUE),
+    ('Nabil Cherkaoui', 'nabil.cherkaoui@autohall.ma', 'Support IT', 'AUTOHALL IT', NULL, TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 -- ── 3) Conversations fictives ────────────────────────────────
@@ -267,3 +219,41 @@ INSERT INTO email_drafts (ticket_id, conversation_id, recipient_email, subject, 
      'Confirmation de votre demande #2 — Création boîte mail',
      'Bonjour Fatima,\n\nVotre demande de création de boîte mail pour Karim Idrissi (k.idrissi@autohall.ma) a bien été enregistrée sous le numéro de ticket #2.\n\nCe ticket a été assigné à Sofia El Idrissi (support Messagerie). Vous serez recontactée dans un délai de 24 à 48 heures.\n\nCordialement,\nL''équipe Helpdesk AUTOHALL',
      'draft');
+
+-- ── 8) Consolidation des techniciens ───────────────────────
+UPDATE technicians
+SET role = 'Support IT', team = 'AUTOHALL IT', category_id = NULL
+WHERE email IN (
+    'amine.spk.zinoun@gmail.com', 'sofia.elidrissi@autohall.ma',
+    'youssef.bensaid@autohall.ma', 'nabil.cherkaoui@autohall.ma'
+);
+
+UPDATE tickets
+SET assigned_to_id = (
+        SELECT id FROM technicians
+        WHERE email = CASE
+            WHEN category IN ('Wincar', 'Windows', 'GestorNet', 'Consommable', 'Moovapps', 'Contrat de Vente', 'GENERAFI', 'Fidélisation', 'SMS', 'VOXCO', 'TPE') THEN 'amine.spk.zinoun@gmail.com'
+            WHEN category IN ('Citrix', 'Logiciel Système', 'Réseau', 'CRM', 'Ligne VPN', 'RIAPP', 'Qalitel Doc', 'Microsoft Teams', 'VPN_FortiClient', 'Antivirus', 'Intranet', 'eSeller') THEN 'sofia.elidrissi@autohall.ma'
+            WHEN category IN ('Matériel', 'Internet', 'APPCC', 'Poste IP Phone', 'Reporting', 'PayRoll', 'GDoc', 'Site Web', 'Optimmo', 'Qalitel Compar', 'SLV', 'C.Conformité') THEN 'youssef.bensaid@autohall.ma'
+            WHEN category IN ('Messagerie', 'Sage', 'Outillages SAV', 'Auto Naps', 'Ligne Téléphonique', 'GSM', 'Sage Paie & RH', 'WebEX', 'AppGCMA', 'SRM', 'Devopps', 'OPEL') THEN 'nabil.cherkaoui@autohall.ma'
+            ELSE NULL
+        END
+    );
+
+UPDATE tickets
+SET assigned_to_name = technicians.full_name,
+    assigned_to_email = technicians.email
+FROM technicians
+WHERE tickets.assigned_to_id = technicians.id;
+
+UPDATE ticket_assignments assignments
+SET technician_id = tickets.assigned_to_id
+FROM tickets
+WHERE assignments.ticket_id = tickets.id
+  AND tickets.assigned_to_id IS NOT NULL;
+
+DELETE FROM technicians
+WHERE email NOT IN (
+    'amine.spk.zinoun@gmail.com', 'sofia.elidrissi@autohall.ma',
+    'youssef.bensaid@autohall.ma', 'nabil.cherkaoui@autohall.ma'
+);

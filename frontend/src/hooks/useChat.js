@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { API_BASE_URL, apiError } from '../services/apiConfig';
 import * as api from '../services/api';
+import { getStoredToken } from '../services/authApi';
 
 export function useChat(user) {
   const [messages, setMessages] = useState([]);
@@ -58,13 +59,17 @@ export function useChat(user) {
     };
 
     try {
+      const token = getStoredToken();
       await fetchEventSource(`${apiUrl}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           messages: chatMessages,
           conversation_id: conversationId,
-          user_name: user?.name,
+          user_name: user?.full_name,
           user_email: user?.email,
         }),
         signal: abortControllerRef.current.signal,
@@ -136,7 +141,7 @@ export function useChat(user) {
         setIsStreaming(false);
       }
     }
-  }, [messages, conversationId]);
+  }, [messages, conversationId, user?.email, user?.full_name]);
 
   const rateMessage = useCallback(async (messageId, rating) => {
     await api.sendChatFeedback({

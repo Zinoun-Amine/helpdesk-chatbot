@@ -284,6 +284,79 @@ async def apply_migrations(engine: AsyncEngine) -> None:
         await conn.execute(
             text(
                 """
+                INSERT INTO technicians (full_name, email, role, team, category_id, active)
+                VALUES
+                    ('Amine Zinoun', 'amine.spk.zinoun@gmail.com', 'Support IT', 'AUTOHALL IT', NULL, true),
+                    ('Sofia El Idrissi', 'sofia.elidrissi@autohall.ma', 'Support IT', 'AUTOHALL IT', NULL, true),
+                    ('Youssef Bensaid', 'youssef.bensaid@autohall.ma', 'Support IT', 'AUTOHALL IT', NULL, true),
+                    ('Nabil Cherkaoui', 'nabil.cherkaoui@autohall.ma', 'Support IT', 'AUTOHALL IT', NULL, true)
+                ON CONFLICT (email) DO UPDATE
+                SET full_name = EXCLUDED.full_name,
+                    role = EXCLUDED.role,
+                    team = EXCLUDED.team,
+                    active = TRUE;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE tickets
+                SET assigned_to_id = CASE
+                        WHEN category IN ('Wincar', 'Windows', 'GestorNet', 'Consommable', 'Moovapps', 'Contrat de Vente', 'GENERAFI', 'Fidélisation', 'SMS', 'VOXCO', 'TPE')
+                            THEN (SELECT id FROM technicians WHERE email = 'amine.spk.zinoun@gmail.com')
+                        WHEN category IN ('Citrix', 'Logiciel Système', 'Réseau', 'CRM', 'Ligne VPN', 'RIAPP', 'Qalitel Doc', 'Microsoft Teams', 'VPN_FortiClient', 'Antivirus', 'Intranet', 'eSeller')
+                            THEN (SELECT id FROM technicians WHERE email = 'sofia.elidrissi@autohall.ma')
+                        WHEN category IN ('Matériel', 'Internet', 'APPCC', 'Poste IP Phone', 'Reporting', 'PayRoll', 'GDoc', 'Site Web', 'Optimmo', 'Qalitel Compar', 'SLV', 'C.Conformité')
+                            THEN (SELECT id FROM technicians WHERE email = 'youssef.bensaid@autohall.ma')
+                        WHEN category IN ('Messagerie', 'Sage', 'Outillages SAV', 'Auto Naps', 'Ligne Téléphonique', 'GSM', 'Sage Paie & RH', 'WebEX', 'AppGCMA', 'SRM', 'Devopps', 'OPEL')
+                            THEN (SELECT id FROM technicians WHERE email = 'nabil.cherkaoui@autohall.ma')
+                        ELSE assigned_to_id
+                    END,
+                    assigned_to_name = CASE
+                        WHEN category IN ('Wincar', 'Windows', 'GestorNet', 'Consommable', 'Moovapps', 'Contrat de Vente', 'GENERAFI', 'Fidélisation', 'SMS', 'VOXCO', 'TPE') THEN 'Amine Zinoun'
+                        WHEN category IN ('Citrix', 'Logiciel Système', 'Réseau', 'CRM', 'Ligne VPN', 'RIAPP', 'Qalitel Doc', 'Microsoft Teams', 'VPN_FortiClient', 'Antivirus', 'Intranet', 'eSeller') THEN 'Sofia El Idrissi'
+                        WHEN category IN ('Matériel', 'Internet', 'APPCC', 'Poste IP Phone', 'Reporting', 'PayRoll', 'GDoc', 'Site Web', 'Optimmo', 'Qalitel Compar', 'SLV', 'C.Conformité') THEN 'Youssef Bensaid'
+                        WHEN category IN ('Messagerie', 'Sage', 'Outillages SAV', 'Auto Naps', 'Ligne Téléphonique', 'GSM', 'Sage Paie & RH', 'WebEX', 'AppGCMA', 'SRM', 'Devopps', 'OPEL') THEN 'Nabil Cherkaoui'
+                        ELSE assigned_to_name
+                    END,
+                    assigned_to_email = CASE
+                        WHEN category IN ('Wincar', 'Windows', 'GestorNet', 'Consommable', 'Moovapps', 'Contrat de Vente', 'GENERAFI', 'Fidélisation', 'SMS', 'VOXCO', 'TPE') THEN 'amine.spk.zinoun@gmail.com'
+                        WHEN category IN ('Citrix', 'Logiciel Système', 'Réseau', 'CRM', 'Ligne VPN', 'RIAPP', 'Qalitel Doc', 'Microsoft Teams', 'VPN_FortiClient', 'Antivirus', 'Intranet', 'eSeller') THEN 'sofia.elidrissi@autohall.ma'
+                        WHEN category IN ('Matériel', 'Internet', 'APPCC', 'Poste IP Phone', 'Reporting', 'PayRoll', 'GDoc', 'Site Web', 'Optimmo', 'Qalitel Compar', 'SLV', 'C.Conformité') THEN 'youssef.bensaid@autohall.ma'
+                        WHEN category IN ('Messagerie', 'Sage', 'Outillages SAV', 'Auto Naps', 'Ligne Téléphonique', 'GSM', 'Sage Paie & RH', 'WebEX', 'AppGCMA', 'SRM', 'Devopps', 'OPEL') THEN 'nabil.cherkaoui@autohall.ma'
+                        ELSE assigned_to_email
+                    END;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE ticket_assignments assignments
+                SET technician_id = tickets.assigned_to_id
+                FROM tickets
+                WHERE assignments.ticket_id = tickets.id
+                  AND tickets.assigned_to_id IS NOT NULL;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                DELETE FROM technicians
+                WHERE email NOT IN (
+                    'amine.spk.zinoun@gmail.com',
+                    'sofia.elidrissi@autohall.ma',
+                    'youssef.bensaid@autohall.ma',
+                    'nabil.cherkaoui@autohall.ma'
+                );
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
                 UPDATE app_settings
                 SET updated_at = NOW()
                 WHERE id = 1;

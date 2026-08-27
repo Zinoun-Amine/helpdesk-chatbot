@@ -30,6 +30,7 @@ from services.settings_service import SettingsService
 from api.chat import llm_provider, glpi_client
 from config import settings
 from services import ollama_memory
+from core.security import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -45,20 +46,35 @@ async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)
     if settings.OLLAMA_ONLY or settings.GLPI_ENABLED:
         created_ticket = await _ollama_ticket_service().create_ticket(ticket.model_dump())
     else:
-        created_ticket = await TicketService(db).create_ticket(ticket.model_dump())
+        created_ticket, _ = await TicketService(db).create_ticket(ticket.model_dump())
 
     email_service = EmailService(db)
-    recipient_email = created_ticket.assigned_to_email or created_ticket.user_email or settings.SMTP_RECIPIENT
     try:
-        body = await email_service.generate_draft_content(created_ticket, [])
-        draft = await email_service.create_draft(
-            ticket_id=created_ticket.id,
-            recipient_email=recipient_email,
-            subject=f"Nouveau Ticket: {created_ticket.category} - {created_ticket.priority}",
-            body=body,
-        )
-        if settings.SMTP_AUTO_SEND:
-            await email_service.send_draft(draft.id)
+        recipients = []
+        if created_ticket.assigned_to_email:
+            technician_body = await email_service.generate_technician_notification(created_ticket)
+            recipients.append((
+                created_ticket.assigned_to_email,
+                f"[AUTOHALL Helpdesk] Ticket #{created_ticket.id} assigné — {created_ticket.category} / {created_ticket.priority}",
+                technician_body,
+            ))
+        if created_ticket.user_email:
+            user_body = await email_service.generate_draft_content(created_ticket, [])
+            recipients.append((
+                created_ticket.user_email,
+                f"Confirmation de votre ticket #{created_ticket.id} — {created_ticket.category}",
+                user_body,
+            ))
+
+        for recipient_email, subject, body in recipients:
+            draft = await email_service.create_draft(
+                ticket_id=created_ticket.id,
+                recipient_email=recipient_email,
+                subject=subject,
+                body=body,
+            )
+            if settings.SMTP_AUTO_SEND:
+                await email_service.send_draft(draft.id)
     except SMTPConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except SMTPDeliveryError as exc:
@@ -72,7 +88,11 @@ async def list_tickets(
     status: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
+    if current_user.get("role") != "admin":
+        user_email = current_user["email"]
+
     if settings.OLLAMA_ONLY or settings.GLPI_ENABLED:
         return await _ollama_ticket_service().list_tickets(search=search, status=status, priority=priority)
     """Liste les tickets avec recherche et filtres."""
@@ -197,6 +217,44 @@ async def assign_ticket(ticket_id: int, payload: TicketAssignmentRequest, db: As
     )
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket ou technicien introuvable")
+
+    # Replace or create the pending draft so the frontend sends it to the
+    # newly assigned technician, never to the previous draft recipient.
+    email_service = EmailService(db, llm_provider)
+    notification_body = await email_service.generate_technician_notification(ticket)
+    notification_subject = (
+        f"[AUTOHALL Helpdesk] Ticket #{ticket.id} assigné — "
+        f"{ticket.category} / {ticket.priority}"
+    )
+    draft_result = await db.execute(
+        text(
+            """
+            SELECT id, status
+            FROM email_drafts
+            WHERE ticket_id = :ticket_id
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        ),
+        {"ticket_id": ticket.id},
+    )
+    latest_draft = draft_result.fetchone()
+    if latest_draft and latest_draft._mapping["status"] == "draft":
+        await email_service.update_draft(
+            latest_draft._mapping["id"],
+            EmailDraftUpdate(
+                recipient_email=ticket.assigned_to_email,
+                subject=notification_subject,
+                body=notification_body,
+            ),
+        )
+    else:
+        await email_service.create_draft(
+            ticket_id=ticket.id,
+            recipient_email=ticket.assigned_to_email,
+            subject=notification_subject,
+            body=notification_body,
+        )
     return ticket
 
 

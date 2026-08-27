@@ -3,6 +3,7 @@ import * as api from '../services/api';
 import TicketDraftModal from './TicketDraftModal';
 import EmailDraft from './EmailDraft';
 import { CriticalityBadge, PriorityBadge } from './TicketBadges';
+import { useAuth } from '../hooks/useAuth';
 
 const emptyDraft = {
   title: '',
@@ -21,6 +22,7 @@ const statusOptions = ['Open', 'In Progress', 'Waiting for User', 'Resolved', 'C
 const priorityOptions = ['Low', 'Medium', 'High', 'Urgent'];
 
 export default function TicketsPage() {
+  const { user } = useAuth();
   const [filters, setFilters] = useState({ search: '', status: '', priority: '' });
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -45,7 +47,11 @@ export default function TicketsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.searchTickets(filters);
+      const params = {
+        ...filters,
+        ...((user?.role || 'user') === 'admin' ? {} : { user_email: user?.email }),
+      };
+      const data = await api.searchTickets(params);
       setTickets(data);
       if (selectedTicket && !data.some(ticket => ticket.id === selectedTicket)) {
         setSelectedTicket(null);
@@ -60,7 +66,7 @@ export default function TicketsPage() {
   useEffect(() => {
     loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.search, filters.status, filters.priority]);
+  }, [filters.search, filters.status, filters.priority, user]);
 
   useEffect(() => {
     if (!selectedTicket) {

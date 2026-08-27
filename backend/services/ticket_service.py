@@ -50,54 +50,33 @@ LEGACY_STATUS_TO_LABEL = {
     "clos": "Closed",
 }
 
+TECHNICIAN_GROUPS = {
+    "Amine Zinoun": {
+        "email": "amine.spk.zinoun@gmail.com",
+        "role": "Support IT",
+        "categories": ("Wincar", "Windows", "GestorNet", "Consommable", "Moovapps", "Contrat de Vente", "GENERAFI", "Fidélisation", "SMS", "VOXCO", "TPE"),
+    },
+    "Sofia El Idrissi": {
+        "email": "sofia.elidrissi@autohall.ma",
+        "role": "Support IT",
+        "categories": ("Citrix", "Logiciel Système", "Réseau", "CRM", "Ligne VPN", "RIAPP", "Qalitel Doc", "Microsoft Teams", "VPN_FortiClient", "Antivirus", "Intranet", "eSeller"),
+    },
+    "Youssef Bensaid": {
+        "email": "youssef.bensaid@autohall.ma",
+        "role": "Support IT",
+        "categories": ("Matériel", "Internet", "APPCC", "Poste IP Phone", "Reporting", "PayRoll", "GDoc", "Site Web", "Optimmo", "Qalitel Compar", "SLV", "C.Conformité"),
+    },
+    "Nabil Cherkaoui": {
+        "email": "nabil.cherkaoui@autohall.ma",
+        "role": "Support IT",
+        "categories": ("Messagerie", "Sage", "Outillages SAV", "Auto Naps", "Ligne Téléphonique", "GSM", "Sage Paie & RH", "WebEX", "AppGCMA", "SRM", "Devopps", "OPEL"),
+    },
+}
+
 TECHNICIAN_BY_CATEGORY = {
-    "Wincar": {"name": "Amine Zinoun", "email": "amine.spk.zinoun@gmail.com", "role": "Responsable support Wincar"},
-    "Messagerie": {"name": "Sofia El Idrissi", "email": "sofia.elidrissi@autohall.ma", "role": "Support messagerie / Outlook"},
-    "Citrix": {"name": "Youssef Bensaid", "email": "youssef.bensaid@autohall.ma", "role": "Support Citrix / virtualisation"},
-    "Matériel": {"name": "Nabil Cherkaoui", "email": "nabil.cherkaoui@autohall.ma", "role": "Support matériel et périphériques"},
-    "Internet": {"name": "Hassan Rami", "email": "hassan.rami@autohall.ma", "role": "Support accès internet / réseau"},
-    "Logiciel Système": {"name": "Karim Tazi", "email": "karim.tazi@autohall.ma", "role": "Support logiciels système"},
-    "Sage": {"name": "Leila Mounir", "email": "leila.mounir@autohall.ma", "role": "Support Sage / comptabilité"},
-    "Windows": {"name": "Omar Fassi", "email": "omar.fassi@autohall.ma", "role": "Support Windows / postes"},
-    "APPCC": {"name": "Reda Najmi", "email": "reda.najmi@autohall.ma", "role": "Support APPCC / conformité"},
-    "Réseau": {"name": "Zakaria Benali", "email": "zakaria.benali@autohall.ma", "role": "Support réseau / Wi-Fi / switches"},
-    "Outillages SAV": {"name": "Mehdi Essalhi", "email": "mehdi.essalhi@autohall.ma", "role": "Support outillages SAV / diagnostics"},
-    "GestorNet": {"name": "Salma Karim", "email": "salma.karim@autohall.ma", "role": "Support GestorNet / workflow"},
-    "CRM": {"name": "Mohamed Aouad", "email": "mohamed.aouad@autohall.ma", "role": "Support CRM / données clients"},
-    "Auto Naps": {"name": "Ilyas Oulhaj", "email": "ilyas.oulhaj@autohall.ma", "role": "Support Auto Naps / planification atelier"},
-    "Poste IP Phone": {"name": "Anas Choukri", "email": "anas.choukri@autohall.ma", "role": "Support téléphonie IP / postes"},
-    "Reporting": {"name": "Sara Bourou", "email": "sara.bourou@autohall.ma", "role": "Support reporting / BI"},
-    "Ligne VPN": {"name": "Samir Lahmadi", "email": "samir.lahmadi@autohall.ma", "role": "Support VPN / accès distant"},
-    "Consommable": {"name": "Fouad Lahlou", "email": "fouad.lahlou@autohall.ma", "role": "Support consommables / matériel de bureau"},
-    "Ligne Téléphonique": {"name": "Mounir Sefrioui", "email": "mounir.sefrioui@autohall.ma", "role": "Support lignes téléphoniques"},
-    "GSM": {"name": "Yacine Debbagh", "email": "yacine.debbagh@autohall.ma", "role": "Support GSM / smartphones"},
-    "Moovapps": {"name": "Hicham Regragui", "email": "hicham.regragui@autohall.ma", "role": "Support Moovapps / GED"},
-    "PayRoll": {"name": "Nadia El Yacoubi", "email": "nadia.elyacoubi@autohall.ma", "role": "Support PayRoll / paie"},
-    "SRM": {"name": "Imane Zaki", "email": "imane.zaki@autohall.ma", "role": "Support SRM / achats fournisseurs"},
-    "RIAPP": {"name": "Hamza El Mansouri", "email": "hamza.elmansouri@autohall.ma", "role": "Support RIAPP"},
-    "Qalitel Doc": {"name": "Imane Berrada", "email": "imane.berrada@autohall.ma", "role": "Support Qalitel Doc"},
-    "GDoc": {"name": "Rachid Alaoui", "email": "rachid.alaoui@autohall.ma", "role": "Support GDoc"},
-    "Contrat de Vente": {"name": "Salma Bennani", "email": "salma.bennani@autohall.ma", "role": "Support contrats de vente"},
-    "Sage Paie & RH": {"name": "Adil Chafik", "email": "adil.chafik@autohall.ma", "role": "Support Sage Paie et RH"},
-    "Microsoft Teams": {"name": "Oumaima El Fassi", "email": "oumaima.elfassi@autohall.ma", "role": "Support Microsoft Teams"},
-    "WebEX": {"name": "Bilal Amrani", "email": "bilal.amrani@autohall.ma", "role": "Support WebEX"},
-    "GENERAFI": {"name": "Hajar Naciri", "email": "hajar.naciri@autohall.ma", "role": "Support GENERAFI"},
-    "Site Web": {"name": "Ayoub Tazi", "email": "ayoub.tazi@autohall.ma", "role": "Support site web"},
-    "AppGCMA": {"name": "Wiam El Khatib", "email": "wiam.elkhatib@autohall.ma", "role": "Support AppGCMA"},
-    "VPN_FortiClient": {"name": "Ismail Rahmani", "email": "ismail.rahmani@autohall.ma", "role": "Support VPN FortiClient"},
-    "Fidélisation": {"name": "Mariam Zahir", "email": "mariam.zahir@autohall.ma", "role": "Support fidélisation"},
-    "Optimmo": {"name": "Soufiane Idrissi", "email": "soufiane.idrissi@autohall.ma", "role": "Support Optimmo"},
-    "SMS": {"name": "Chaimae Ait Lahcen", "email": "chaimae.aitlahcen@autohall.ma", "role": "Support SMS"},
-    "Qalitel Compar": {"name": "Yassine El Ouardi", "email": "yassine.elouardi@autohall.ma", "role": "Support Qalitel Compar"},
-    "Antivirus": {"name": "Hind Bennis", "email": "hind.bennis@autohall.ma", "role": "Support antivirus"},
-    "SLV": {"name": "Noura El Kadi", "email": "noura.elkadi@autohall.ma", "role": "Support SLV"},
-    "VOXCO": {"name": "Mehdi Rahal", "email": "mehdi.rahal@autohall.ma", "role": "Support VOXCO"},
-    "Intranet": {"name": "Kawtar Benjelloun", "email": "kawtar.benjelloun@autohall.ma", "role": "Support intranet"},
-    "Devopps": {"name": "Anass El Ghazali", "email": "anass.elghazali@autohall.ma", "role": "Support Devopps"},
-    "C.Conformité": {"name": "Siham Lahlou", "email": "siham.lahlou@autohall.ma", "role": "Support conformité"},
-    "eSeller": {"name": "Zakaria El Haddad", "email": "zakaria.elhaddad@autohall.ma", "role": "Support eSeller"},
-    "TPE": {"name": "Amina Bouazza", "email": "amina.bouazza@autohall.ma", "role": "Support terminaux de paiement"},
-    "OPEL": {"name": "Tarik Azzouzi", "email": "tarik.azzouzi@autohall.ma", "role": "Support OPEL"},
+    category: {"name": technician_name, "email": details["email"], "role": details["role"]}
+    for technician_name, details in TECHNICIAN_GROUPS.items()
+    for category in details["categories"]
 }
 
 

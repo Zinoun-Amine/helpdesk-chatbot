@@ -73,20 +73,25 @@ class ConversationService:
         )
         return [MessageResponse(**row._mapping) for row in result.fetchall()]
 
-    async def get_recent_conversations(self, limit: int = 8) -> List[ConversationSummary]:
+    async def get_recent_conversations(self, limit: int = 8, user_email: Optional[str] = None) -> List[ConversationSummary]:
+        user_filter = "WHERE c.user_email = :user_email" if user_email else ""
+        params: Dict[str, Any] = {"limit": limit}
+        if user_email:
+            params["user_email"] = user_email
         result = await self.db.execute(
             text(
-                """
+                f"""
                 SELECT c.id, c.user_name, c.user_email, c.status, c.current_state, c.created_at, c.updated_at,
                        COUNT(m.id) AS message_count
                 FROM conversations c
                 LEFT JOIN messages m ON m.conversation_id = c.id
+                {user_filter}
                 GROUP BY c.id
                 ORDER BY c.updated_at DESC, c.created_at DESC
                 LIMIT :limit
                 """
             ),
-            {"limit": limit},
+            params,
         )
         return [ConversationSummary(**row._mapping) for row in result.fetchall()]
 
@@ -118,7 +123,7 @@ class ConversationService:
         messages = await self.get_messages(conversation_id)
         return ConversationResponse(conversation_id=conversation_id, messages=messages)
 
-    async def count_total(self, start: Optional[datetime] = None, end: Optional[datetime] = None) -> int:
+    async def count_total(self, start: Optional[datetime] = None, end: Optional[datetime] = None, user_email: Optional[str] = None) -> int:
         query = "SELECT COUNT(*) AS count FROM conversations"
         params: Dict[str, Any] = {}
         filters = []
@@ -128,13 +133,16 @@ class ConversationService:
         if end:
             filters.append("created_at < :end")
             params["end"] = end
+        if user_email:
+            filters.append("user_email = :user_email")
+            params["user_email"] = user_email
         if filters:
             query += " WHERE " + " AND ".join(filters)
         result = await self.db.execute(text(query), params)
         row = result.fetchone()
         return int(row._mapping["count"])
 
-    async def count_active_users(self, start: Optional[datetime] = None, end: Optional[datetime] = None) -> int:
+    async def count_active_users(self, start: Optional[datetime] = None, end: Optional[datetime] = None, user_email: Optional[str] = None) -> int:
         query = "SELECT COUNT(DISTINCT user_email) AS count FROM conversations"
         params: Dict[str, Any] = {}
         filters = ["user_email IS NOT NULL"]
@@ -144,6 +152,9 @@ class ConversationService:
         if end:
             filters.append("updated_at < :end")
             params["end"] = end
+        if user_email:
+            filters.append("user_email = :user_email")
+            params["user_email"] = user_email
         query += " WHERE " + " AND ".join(filters)
         result = await self.db.execute(text(query), params)
         row = result.fetchone()
