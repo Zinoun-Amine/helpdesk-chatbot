@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ChatWindow from './components/ChatWindow';
 import Sidebar from './components/Sidebar';
 import ThemeToggle from './components/ThemeToggle';
@@ -17,7 +17,7 @@ import * as api from './services/api';
 function AppContent() {
   const { themeMode, toggleTheme } = useTheme();
   const { user, login, signup, logout } = useAuth();
-  const [activeView, setActiveView] = useState('chat');
+  const [activeView, setActiveView] = useState(() => user?.role === 'technician' ? 'tickets' : 'chat');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem('autohall-sidebar-collapsed') === 'true'; } catch { return false; }
@@ -39,6 +39,11 @@ function AppContent() {
     rateMessage,
   } = useChat(user);
 
+  useEffect(() => {
+    if (user?.role === 'technician') setActiveView('tickets');
+    else if (user?.role === 'user') setActiveView('chat');
+  }, [user]);
+
   const viewLabels = useMemo(() => ({
     chat: 'Chat',
     tickets: 'Tickets',
@@ -47,6 +52,10 @@ function AppContent() {
   }), []);
 
   const handleNavigate = (view) => {
+    if (user.role === 'technician' && view !== 'tickets') return;
+    if (user.role === 'user' && view !== 'chat') return;
+    if (user.role !== 'admin' && view === 'dashboard') return;
+    if (user.role !== 'admin' && view === 'settings') return;
     setActiveView(view);
     setSidebarOpen(false);
   };
@@ -62,8 +71,8 @@ function AppContent() {
    * Après succès, l'utilisateur est persisté via `useAuth.login`.
    */
   const handleLogin = async (email, password) => {
-    await login(email, password);
-    setActiveView('chat');
+    const loggedUser = await login(email, password);
+    setActiveView(loggedUser?.role === 'technician' ? 'tickets' : 'chat');
   };
 
   /**
@@ -161,6 +170,7 @@ function AppContent() {
         toggleSidebar={() => setSidebarOpen(prev => !prev)}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebarCollapsed}
+        role={user.role}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur flex items-center justify-between px-6 z-20 dark:border-slate-800 dark:bg-slate-900/80">
@@ -175,7 +185,7 @@ function AppContent() {
             <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-blue-700 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" />Bêta</span>
           </div>
           <div className="flex items-center gap-3">
-            {activeView === 'chat' && messages.length > 0 && (
+            {user.role !== 'technician' && activeView === 'chat' && messages.length > 0 && (
               <button
                 onClick={openTicketDraftFromConversation}
                 disabled={draftSaving || isStreaming}
@@ -197,7 +207,7 @@ function AppContent() {
         </header>
 
         <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-          {activeView === 'chat' && (
+          {user.role !== 'technician' && activeView === 'chat' && (
             <div key="chat" className="flex-1 p-2 md:p-4 overflow-hidden animate-page-enter">
               <ChatWindow
                 messages={messages}
@@ -210,8 +220,8 @@ function AppContent() {
           )}
 
           {activeView === 'tickets' && <div key="tickets" className="flex-1 min-h-0 overflow-y-auto animate-page-enter"><TicketsPage /></div>}
-          {activeView === 'dashboard' && <div key="dashboard" className="flex-1 min-h-0 overflow-y-auto animate-page-enter"><DashboardPage /></div>}
-          {activeView === 'settings' && <div key="settings" className="flex-1 min-h-0 overflow-y-auto animate-page-enter"><SettingsPage /></div>}
+          {user.role === 'admin' && activeView === 'dashboard' && <div key="dashboard" className="flex-1 min-h-0 overflow-y-auto animate-page-enter"><DashboardPage /></div>}
+          {user.role === 'admin' && activeView === 'settings' && <div key="settings" className="flex-1 min-h-0 overflow-y-auto animate-page-enter"><SettingsPage /></div>}
         </main>
       </div>
 

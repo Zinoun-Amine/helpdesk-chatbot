@@ -12,6 +12,7 @@ from models.schemas import DashboardResponse
 from config import settings
 from services import ollama_memory
 from core.security import get_current_user
+from fastapi import HTTPException, status
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,8 @@ async def get_dashboard(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Dashboard réservé aux administrateurs.")
     if settings.OLLAMA_ONLY:
         return ollama_memory.get_dashboard()
     service = DashboardService(db, llm_provider if isinstance(llm_provider, FallbackProvider) else None)

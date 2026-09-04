@@ -41,8 +41,18 @@ def _ollama_ticket_service() -> OllamaTicketService:
     return OllamaTicketService(glpi_client)
 
 @router.post("/tickets", response_model=TicketResponse)
-async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)):
+async def create_ticket(
+    ticket: TicketCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Crée un ticket, puis son brouillon e-mail (et l'envoie si activé)."""
+    if current_user.get("role") == "technician":
+        raise HTTPException(status_code=403, detail="Les techniciens ne peuvent pas créer de ticket.")
+    if current_user.get("role") != "admin":
+        ticket.user_email = current_user["email"]
+        ticket.user_name = current_user["full_name"]
+
     if settings.OLLAMA_ONLY or settings.GLPI_ENABLED:
         created_ticket = await _ollama_ticket_service().create_ticket(ticket.model_dump())
     else:
@@ -90,14 +100,18 @@ async def list_tickets(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    if current_user.get("role") != "admin":
+    assigned_to_email = None
+    if current_user.get("role") == "technician":
+        assigned_to_email = current_user["email"]
+        user_email = None
+    elif current_user.get("role") != "admin":
         user_email = current_user["email"]
 
     if settings.OLLAMA_ONLY or settings.GLPI_ENABLED:
         return await _ollama_ticket_service().list_tickets(search=search, status=status, priority=priority)
     """Liste les tickets avec recherche et filtres."""
     service = TicketService(db)
-    return await service.list_tickets(user_email=user_email, search=search, status=status, priority=priority)
+    return await service.list_tickets(user_email=user_email, assigned_to_email=assigned_to_email, search=search, status=status, priority=priority)
 
 @router.get("/tickets/{ticket_id}", response_model=TicketDetailResponse)
 async def get_ticket(ticket_id: int, db: AsyncSession = Depends(get_db)):

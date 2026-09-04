@@ -18,11 +18,12 @@ const emptyDraft = {
   conversation_id: null,
 };
 
-const statusOptions = ['Open', 'In Progress', 'Waiting for User', 'Resolved', 'Closed'];
+const statusOptions = ['In Progress', 'Resolved'];
 const priorityOptions = ['Low', 'Medium', 'High', 'Urgent'];
 
 export default function TicketsPage() {
   const { user } = useAuth();
+  const isTechnician = user?.role === 'technician';
   const [filters, setFilters] = useState({ search: '', status: '', priority: '' });
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -238,9 +239,9 @@ export default function TicketsPage() {
             <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">Gestion des demandes</h2>
             <p className="mt-1 max-w-2xl text-xs text-slate-500 dark:text-slate-400">Créer, consulter, filtrer, commenter et suivre l’historique des tickets à partir des données réelles.</p>
           </div>
-          <button onClick={() => setDraftOpen(true)} className="rounded-xl bg-autohall-blue px-4 py-2 text-xs font-semibold text-white hover:bg-autohall-darkBlue">
+          {!isTechnician && <button onClick={() => setDraftOpen(true)} className="rounded-xl bg-autohall-blue px-4 py-2 text-xs font-semibold text-white hover:bg-autohall-darkBlue">
             Nouveau ticket
-          </button>
+          </button>}
         </div>
 
         <div className="mt-3 grid gap-2 md:grid-cols-4">
@@ -443,7 +444,7 @@ export default function TicketsPage() {
                       <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">Aucun technicien assigné pour ce ticket.</div>
                     )}
 
-                    <div className="mt-3 space-y-3">
+                    {!isTechnician && <div className="mt-3 space-y-3">
                       <label className="block space-y-1">
                         <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Réaffecter</span>
                         <select
@@ -480,7 +481,7 @@ export default function TicketsPage() {
                           E-mail envoyé au technicien · {new Date(emailSentAt).toLocaleTimeString('fr-FR')}
                         </div>
                       )}
-                    </div>
+                    </div>}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">

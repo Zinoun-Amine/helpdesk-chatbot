@@ -7,7 +7,11 @@ const navigationItems = [
   { id: 'settings', label: 'Settings', icon: 'M12 8.25a3.75 3.75 0 100 7.5 3.75 3.75 0 000-7.5zM19.4 15a7.97 7.97 0 00.1-1 7.97 7.97 0 00-.1-1l2.03-1.58a.5.5 0 00.12-.65l-1.92-3.32a.5.5 0 00-.61-.22l-2.39.96a8.24 8.24 0 00-1.73-1l-.36-2.54a.5.5 0 00-.5-.43h-3.84a.5.5 0 00-.5.43l-.36 2.54c-.62.25-1.2.59-1.73 1l-2.39-.96a.5.5 0 00-.61.22L2.45 10.77a.5.5 0 00.12.65L4.6 13a7.97 7.97 0 000 2l-2.03 1.58a.5.5 0 00-.12.65l1.92 3.32a.5.5 0 00.61.22l2.39-.96c.53.41 1.11.75 1.73 1l.36 2.54a.5.5 0 00.5.43h3.84a.5.5 0 00.5-.43l.36-2.54c.62-.25 1.2-.59 1.73-1l2.39.96a.5.5 0 00.61-.22l1.92-3.32a.5.5 0 00-.12-.65L19.4 15z' },
 ];
 
-export default function Sidebar({ onNewChat, onNavigate, activeView, isOpen, toggleSidebar, isCollapsed = false, onToggleCollapse }) {
+export default function Sidebar({ onNewChat, onNavigate, activeView, isOpen, toggleSidebar, isCollapsed = false, onToggleCollapse, role = 'user' }) {
+  const visibleItems = navigationItems.filter(item => (
+    role === 'admin' || (role === 'technician' && item.id === 'tickets') || (role === 'user' && item.id === 'chat')
+  ));
+  const canStartChat = role !== 'technician';
   return (
     <>
       {isOpen && (
@@ -39,13 +43,13 @@ export default function Sidebar({ onNewChat, onNavigate, activeView, isOpen, tog
         </div>
 
         <div className="p-4 space-y-2">
-          <button onClick={() => { onNewChat(); if (window.innerWidth < 768) toggleSidebar(); }} className={`w-full flex items-center ${isCollapsed ? 'md:justify-center' : 'space-x-2'} rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700`}>
+          {canStartChat && <button onClick={() => { onNewChat(); if (window.innerWidth < 768) toggleSidebar(); }} className={`w-full flex items-center ${isCollapsed ? 'md:justify-center' : 'space-x-2'} rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700`}>
             <svg className="w-5 h-5 text-autohall-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             <span className={isCollapsed ? 'md:hidden' : ''}>Nouvelle demande</span>
-          </button>
+          </button>}
 
           <div className="space-y-1 pt-2">
-            {navigationItems.map(item => (
+            {visibleItems.map(item => (
               <button key={item.id} onClick={() => { onNavigate(item.id); if (window.innerWidth < 768) toggleSidebar(); }} className={`w-full flex items-center ${isCollapsed ? 'md:justify-center' : 'space-x-3'} px-4 py-3 rounded-xl border transition-colors text-left ${activeView === item.id ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300' : 'border-transparent bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
                 <span className={`font-medium ${isCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>

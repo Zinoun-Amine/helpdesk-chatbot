@@ -422,6 +422,7 @@ class TicketService:
     async def list_tickets(
         self,
         user_email: Optional[str] = None,
+        assigned_to_email: Optional[str] = None,
         search: Optional[str] = None,
         status: Optional[str] = None,
         priority: Optional[str] = None,
@@ -433,6 +434,10 @@ class TicketService:
         if user_email:
             filters.append("t.user_email = :user_email")
             params["user_email"] = user_email
+
+        if assigned_to_email:
+            filters.append("LOWER(t.assigned_to_email) = LOWER(:assigned_to_email)")
+            params["assigned_to_email"] = assigned_to_email
 
         if status:
             filters.append("LOWER(COALESCE(t.status_label, t.status)) = LOWER(:status)")

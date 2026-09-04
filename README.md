@@ -186,6 +186,16 @@ ChatBot Auto Hall/
 | `messages` | Historique des messages (user/assistant) |
 | `email_drafts` | Brouillons d'e-mail (jamais envoyés sans validation) |
 
+### Interfaces et rôles
+
+| Rôle | Interface | Accès |
+|------|-----------|-------|
+| `user` | Chat | Chatbot uniquement |
+| `technician` | Tickets | Tickets assignés à son adresse e-mail |
+| `admin` | Administration | Chat, tous les tickets, dashboard et paramètres |
+
+Les quatre comptes techniciens sont créés automatiquement depuis la table `technicians` pendant la migration PostgreSQL. Leur mot de passe initial local est défini par `TECHNICIAN_DEFAULT_PASSWORD` (valeur par défaut : `technician1234`) et doit être changé avant toute utilisation réelle.
+
 ### Catégories métier
 
 Wincar • Messagerie • Citrix • Matériel • Internet • Logiciel Système • Sage • Windows • APPCC • Réseau • Outillages SAV • GestorNet • CRM • Auto Naps • Poste IP Phone • Reporting • Ligne VPN • Consommable • Ligne Téléphonique • GSM • Moovapps • PayRoll • SRM

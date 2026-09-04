@@ -89,7 +89,8 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "change-me-in-production-please"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24h par défaut
-    
+    TECHNICIAN_DEFAULT_PASSWORD: str = "technician1234"
+
     # Rate Limiting & Cache
     RATE_LIMIT_REQUESTS: int = 20
     RATE_LIMIT_WINDOW: int = 60  # secondes

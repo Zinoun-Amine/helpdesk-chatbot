@@ -2,6 +2,8 @@ import logging
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
+from core.security import hash_password
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +160,50 @@ async def apply_migrations(engine: AsyncEngine) -> None:
     async with engine.begin() as conn:
         for statement in statements:
             await conn.execute(text(statement))
+
+        technician_password_hash = hash_password(settings.TECHNICIAN_DEFAULT_PASSWORD)
+        await conn.execute(
+            text(
+                """
+                INSERT INTO users (email, full_name, hashed_password, role, is_active)
+                SELECT email, full_name, :password_hash, 'technician', active
+                FROM technicians
+                WHERE email IN (
+                    'amine.spk.zinoun@gmail.com',
+                    'sofia.elidrissi@autohall.ma',
+                    'youssef.bensaid@autohall.ma',
+                    'nabil.cherkaoui@autohall.ma'
+                )
+                ON CONFLICT (email) DO UPDATE
+                SET full_name = EXCLUDED.full_name,
+                    role = 'technician',
+                    is_active = EXCLUDED.is_active;
+                """
+            ),
+            {"password_hash": technician_password_hash},
+        )
+
+        technician_password_hash = hash_password(settings.TECHNICIAN_DEFAULT_PASSWORD)
+        await conn.execute(
+            text(
+                """
+                INSERT INTO users (email, full_name, hashed_password, role, is_active)
+                SELECT email, full_name, :password_hash, 'technician', active
+                FROM technicians
+                WHERE email IN (
+                    'amine.spk.zinoun@gmail.com',
+                    'sofia.elidrissi@autohall.ma',
+                    'youssef.bensaid@autohall.ma',
+                    'nabil.cherkaoui@autohall.ma'
+                )
+                ON CONFLICT (email) DO UPDATE
+                SET full_name = EXCLUDED.full_name,
+                    role = 'technician',
+                    is_active = EXCLUDED.is_active;
+                """
+            ),
+            {"password_hash": technician_password_hash},
+        )
 
         # ✅ FIX: qualify all column references with `tickets.` to resolve
         # the ambiguity with `categories.description` introduced by the FROM join.

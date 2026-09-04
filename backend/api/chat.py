@@ -129,6 +129,9 @@ async def chat_endpoint(
     """
     Endpoint principal pour le chat. Renvoie une réponse SSE (Server-Sent Events).
     """
+    if current_user.get("role") == "technician":
+        raise HTTPException(status_code=403, detail="Le chatbot n'est pas disponible pour les techniciens.")
+
     chat_request.user_name = current_user["full_name"]
     chat_request.user_email = current_user["email"]
 

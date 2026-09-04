@@ -59,7 +59,7 @@ services:
       POSTGRES_PASSWORD: chatbot_pass
       POSTGRES_DB: chatbot_db
     ports:
-      - "5433:5432"   # host port changed to avoid conflict with local PostgreSQL
+      - "5433:5432"   
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
